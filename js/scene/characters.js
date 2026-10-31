@@ -784,19 +784,25 @@ function animateCustomer(dt, elapsed, onArrivedAtCounter, onLeftShop) {
  * 6. HỆ THỐNG KHÁCH NGỒI BÀN UỐNG TRÀ SỮA (SEATED CUSTOMERS ENGINE)
  * ============================================================================ */
 
-// 4 vị trí ghế đẩu quanh 2 bàn tròn
+// 8 vị trí ghế đẩu quanh 4 bàn tròn (4 ghế ban đầu + 4 ghế khi mở rộng bàn ghế)
 const SHOP_SEATS = [
     { id: 0, pos: new THREE.Vector3(2.45, 0, 1.5), sitPos: new THREE.Vector3(2.45, 0.22, 1.5), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(3.15, 1.10, 1.5), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
     { id: 1, pos: new THREE.Vector3(4.75, 0, 1.5), sitPos: new THREE.Vector3(4.75, 0.22, 1.5), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, 1.5), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
     { id: 2, pos: new THREE.Vector3(2.45, 0, -1.8), sitPos: new THREE.Vector3(2.45, 0.22, -1.8), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(3.15, 1.10, -1.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
-    { id: 3, pos: new THREE.Vector3(4.75, 0, -1.8), sitPos: new THREE.Vector3(4.75, 0.22, -1.8), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, -1.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null }
+    { id: 3, pos: new THREE.Vector3(4.75, 0, -1.8), sitPos: new THREE.Vector3(4.75, 0.22, -1.8), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, -1.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
+    // 4 ghế bổ sung tại Bàn #3 (Z = 3.8) và Bàn #4 (Z = -3.8)
+    { id: 4, pos: new THREE.Vector3(2.45, 0, 3.8), sitPos: new THREE.Vector3(2.45, 0.22, 3.8), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(3.15, 1.10, 3.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
+    { id: 5, pos: new THREE.Vector3(4.75, 0, 3.8), sitPos: new THREE.Vector3(4.75, 0.22, 3.8), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, 3.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
+    { id: 6, pos: new THREE.Vector3(2.45, 0, -3.8), sitPos: new THREE.Vector3(2.45, 0.22, -3.8), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(3.15, 1.10, -3.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
+    { id: 7, pos: new THREE.Vector3(4.75, 0, -3.8), sitPos: new THREE.Vector3(4.75, 0.22, -3.8), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, -3.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null }
 ];
 
 let seatedCustomers = [];
 let dirtyTableHitboxes = [];
 
 function getAvailableSeat() {
-    return SHOP_SEATS.find(s => !s.occupied && !s.isDirty) || null;
+    const maxSeats = (typeof gameState !== 'undefined' && gameState.upgrades && gameState.upgrades.extra_tables) ? 8 : 4;
+    return SHOP_SEATS.slice(0, maxSeats).find(s => !s.occupied && !s.isDirty) || null;
 }
 
 function createTableCup(teaColor) {
@@ -1133,5 +1139,145 @@ function clearAllSeatedCustomers(targetScene) {
         s.seatedData = null;
     });
     dirtyTableHitboxes = [];
+}
+
+/* ============================================================================
+ * 7. HỆ THỐNG XẾP HÀNG CHỜ GỌI MÓN (CUSTOMER QUEUE SYSTEM)
+ * Tạo hàng dài khách hàng Chibi xếp hàng sau quầy order
+ * ============================================================================ */
+
+const QUEUE_SLOTS = [
+    new THREE.Vector3(-0.25, 0, 2.75),
+    new THREE.Vector3(-0.25, 0, 4.05),
+    new THREE.Vector3(-0.25, 0, 5.35)
+];
+
+let customerQueue = [];
+
+function initCustomerQueue(targetScene) {
+    if (!targetScene || (typeof CUSTOMER_PROFILES === 'undefined') || CUSTOMER_PROFILES.length === 0) return;
+    
+    while (customerQueue.length < QUEUE_SLOTS.length) {
+        const slotIdx = customerQueue.length;
+        const profile = CUSTOMER_PROFILES[Math.floor(Math.random() * CUSTOMER_PROFILES.length)];
+        const fig = createFullyArticulatedChibi(profile);
+        const group = fig.root;
+        
+        group.position.copy(QUEUE_SLOTS[slotIdx]);
+        group.rotation.y = Math.PI; // Quay mặt về quầy
+        targetScene.add(group);
+        
+        customerQueue.push({
+            profile: profile,
+            group: group,
+            limbs: fig,
+            slotIdx: slotIdx,
+            targetPos: QUEUE_SLOTS[slotIdx].clone(),
+            isWalking: false,
+            walkCycle: Math.random() * 10,
+            idleOffset: Math.random() * Math.PI * 2
+        });
+    }
+}
+
+function advanceCustomerQueue(targetScene) {
+    if (customerQueue.length === 0) {
+        if (typeof CUSTOMER_PROFILES !== 'undefined' && CUSTOMER_PROFILES.length > 0) {
+            return CUSTOMER_PROFILES[Math.floor(Math.random() * CUSTOMER_PROFILES.length)];
+        }
+        return null;
+    }
+
+    // 1. Lấy khách đầu hàng
+    const head = customerQueue.shift();
+    if (head && head.group && targetScene) {
+        targetScene.remove(head.group);
+    }
+    const nextProfile = head ? head.profile : (CUSTOMER_PROFILES[0] || null);
+
+    // 2. Dồn các khách còn lại tiến lên 1 vị trí
+    customerQueue.forEach((qItem, idx) => {
+        qItem.slotIdx = idx;
+        qItem.targetPos.copy(QUEUE_SLOTS[idx]);
+        qItem.isWalking = true;
+    });
+
+    // 3. Bổ sung 1 khách mới vào cuối hàng từ cửa đi vào
+    if (customerQueue.length < QUEUE_SLOTS.length && targetScene && typeof CUSTOMER_PROFILES !== 'undefined') {
+        const newSlotIdx = customerQueue.length;
+        const newProfile = CUSTOMER_PROFILES[Math.floor(Math.random() * CUSTOMER_PROFILES.length)];
+        const fig = createFullyArticulatedChibi(newProfile);
+        const group = fig.root;
+
+        // Bắt đầu từ cửa ngoài
+        group.position.set(-5.5, 0, 5.35);
+        group.rotation.y = 0;
+        targetScene.add(group);
+
+        customerQueue.push({
+            profile: newProfile,
+            group: group,
+            limbs: fig,
+            slotIdx: newSlotIdx,
+            targetPos: QUEUE_SLOTS[newSlotIdx].clone(),
+            isWalking: true,
+            walkCycle: 0,
+            idleOffset: Math.random() * Math.PI * 2
+        });
+    }
+
+    return nextProfile;
+}
+
+function animateCustomerQueue(dt, elapsed) {
+    if (!customerQueue || customerQueue.length === 0) return;
+
+    for (let i = 0; i < customerQueue.length; i++) {
+        const item = customerQueue[i];
+        if (item.isWalking) {
+            const currentPos = item.group.position;
+            const dir = new THREE.Vector3().subVectors(item.targetPos, currentPos);
+            const dist = dir.length();
+
+            if (dist > 0.08) {
+                dir.normalize();
+                currentPos.addScaledVector(dir, 3.2 * dt);
+                item.group.rotation.y = Math.atan2(dir.x, dir.z);
+
+                item.walkCycle += dt * 15;
+                const swing = Math.sin(item.walkCycle);
+
+                if (item.limbs.leftLeg && item.limbs.rightLeg) {
+                    item.limbs.leftLeg.rotation.x = swing * 0.55;
+                    item.limbs.rightLeg.rotation.x = -swing * 0.55;
+                }
+                if (item.limbs.leftArm && item.limbs.rightArm) {
+                    item.limbs.leftArm.rotation.x = -swing * 0.45;
+                    item.limbs.rightArm.rotation.x = swing * 0.45;
+                }
+                item.group.position.y = Math.abs(Math.sin(item.walkCycle)) * 0.08;
+            } else {
+                // Đã tới vị trí xếp hàng
+                item.group.position.copy(item.targetPos);
+                item.group.position.y = 0;
+                item.group.rotation.y = Math.PI; // Quay mặt về quầy
+                item.isWalking = false;
+
+                if (item.limbs.leftLeg && item.limbs.rightLeg) {
+                    item.limbs.leftLeg.rotation.x = 0;
+                    item.limbs.rightLeg.rotation.x = 0;
+                }
+                if (item.limbs.leftArm) item.limbs.leftArm.rotation.x = 0;
+                if (item.limbs.rightArm) item.limbs.rightArm.rotation.x = 0;
+            }
+        } else {
+            // Đang đứng xếp hàng: thở nhè nhẹ và ngó nghiêng tò mò
+            item.group.position.y = Math.abs(Math.sin(elapsed * 2.0 + item.idleOffset)) * 0.02;
+            if (item.limbs.headGroup) {
+                item.limbs.headGroup.rotation.y = Math.sin(elapsed * 1.2 + item.idleOffset) * 0.12;
+                item.limbs.headGroup.rotation.z = Math.sin(elapsed * 0.8 + item.idleOffset) * 0.04;
+            }
+        }
+    }
 }
 

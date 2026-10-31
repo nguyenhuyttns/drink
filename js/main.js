@@ -39,6 +39,17 @@ function initGame() {
     if (gameState.staff && gameState.staff.barista_assistant && typeof buildAssistantBarista3D === 'function') {
         buildAssistantBarista3D(scene);
     }
+    if (gameState.staff && gameState.staff.pastry_chef && typeof buildPastryChef3D === 'function') {
+        buildPastryChef3D(scene);
+    }
+    if (gameState.staff && gameState.staff.greeter_dog && typeof buildGreeterDog3D === 'function') {
+        buildGreeterDog3D(scene);
+    }
+
+    // Khởi tạo hàng khách xếp hàng chờ gọi món
+    if (typeof initCustomerQueue === 'function') {
+        initCustomerQueue(scene);
+    }
 
     // 3. Đăng ký tương tác click chuột vào quầy và bé mèo trong không gian 3D
     setupPointerInteraction(renderer, camera, counterHitboxMeshRef, petCatHitboxRef);
@@ -74,6 +85,9 @@ function initGame() {
         // Hoạt ảnh nhân vật
         animateBarista(elapsed);
         animateCustomer(dt, elapsed, onCustomerArrivedAtCounter, onCustomerLeftShop);
+        if (typeof animateCustomerQueue === 'function') {
+            animateCustomerQueue(dt, elapsed);
+        }
         if (typeof animateSeatedCustomers === 'function') {
             animateSeatedCustomers(dt, elapsed, scene);
         }

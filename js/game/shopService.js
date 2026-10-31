@@ -32,8 +32,15 @@ function buyUpgrade(upgradeId) {
         applyUpgrade3D(upgradeId, scene);
     }
 
-    // Thông báo chúc mừng
-    showToast(`🎉 Chúc mừng! Bạn đã trang bị "${item.name}" cho tiệm!`);
+    if (upgradeId === 'bakery_counter') {
+        gameState.staff.pastry_chef = true;
+        if (typeof buildPastryChef3D === 'function' && typeof scene !== 'undefined') {
+            buildPastryChef3D(scene);
+        }
+        showToast('🎉 Bạn đã mở thêm Quầy Bánh Ngọt mới toanh và có thêm Thợ Bánh Bé Mèo đứng quầy!');
+    } else {
+        showToast(`🎉 Chúc mừng! Bạn đã trang bị "${item.name}" cho tiệm!`);
+    }
 
     // Render lại danh sách cửa hàng
     if (typeof renderShopItems === 'function') {

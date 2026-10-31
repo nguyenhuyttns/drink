@@ -72,7 +72,10 @@ function setupPointerInteraction(targetRenderer, targetCamera, counterHitboxMesh
             const intersects = raycaster.intersectObject(counterHitboxMesh, true);
             if (intersects.length > 0) {
                 focusCounterCamera();
-                showToast('✨ Bạn vừa nhấn vào Quầy Pha Chế! Hãy chọn cốt trà và topping nhé.');
+                if (typeof openCraftingPanel === 'function') {
+                    openCraftingPanel();
+                }
+                showToast('✨ Bạn vừa nhấn vào Quầy Pha Chế! Bảng chọn món đã mở ra.');
             }
         }
     });

@@ -21,7 +21,28 @@ const STAFF_ROLES = {
         icon: '🐻',
         hireCost: 60000,
         dailySalary: 25000,
-        desc: 'Tự động rót sẵn cốt trà chuẩn xác theo đơn hàng mới của khách sau 1.5 giây nếu bạn bận.',
+        desc: 'Tự động làm trọn gói đơn hàng (rót trà, thêm topping, dập nắp) nhanh thoăn thoắt.',
         benefit: 'Tối ưu tốc độ phục vụ, luôn đạt đánh giá 3 Sao tốc độ (+15.000đ).'
+    },
+    pastry_chef: {
+        id: 'pastry_chef',
+        name: 'Bé Mèo Bếp Bánh (Pastry Chef)',
+        title: 'Thợ làm bánh ngọt',
+        icon: '🐱',
+        hireCost: 55000,
+        dailySalary: 20000,
+        desc: 'Đứng quầy bánh ngọt 3D, tự động lấy bánh và xếp đĩa giao cho khách ngay khi khách gọi kèm.',
+        benefit: 'Tự động phục vụ bánh ngọt, tăng thêm lợi nhuận món ăn kèm.'
+    },
+    greeter_dog: {
+        id: 'greeter_dog',
+        name: 'Bé Cún Tiếp Tân & Bảo Vệ (Greeter)',
+        title: 'Tiếp tân đón khách',
+        icon: '🐶',
+        hireCost: 45000,
+        dailySalary: 18000,
+        desc: 'Đứng trước cửa chào đón từng khách hàng, hướng dẫn khách xếp hàng ngay ngắn và kiên nhẫn.',
+        benefit: 'Tăng thêm +4 giây kiên nhẫn ban đầu cho mọi lượt khách xếp hàng.'
     }
 };
+

@@ -64,6 +64,7 @@ function toggleTopping(topId) {
 function clearCurrentCup(withSound = true) {
     gameState.cup.teaId = null;
     gameState.cup.toppings.clear();
+    gameState.cup.pastryId = null;
     gameState.cup.isSealed = false;
 
     resetCup3DVisuals();
@@ -72,6 +73,34 @@ function clearCurrentCup(withSound = true) {
         playSoundEffect('click');
         showToast('🗑️ Đã đổ bỏ ly cũ. Bạn có thể pha lại ly mới!');
     }
+    updateCraftingUI();
+}
+
+function selectPastry(pastryId) {
+    if (gameState.phase !== 'ORDERING') {
+        showToast('⏳ Hãy đợi khách hàng bước vào quầy gọi món nhé!');
+        return;
+    }
+    if (gameState.cup.isSealed) return;
+
+    if (gameState.cup.pastryId === pastryId) {
+        gameState.cup.pastryId = null;
+        playSoundEffect('click');
+        showToast('Đã bỏ bánh khỏi khay phục vụ!');
+    } else {
+        if (typeof checkCanServePastry === 'function' && !checkCanServePastry(pastryId)) {
+            const pName = (typeof PASTRY_MENU !== 'undefined' && PASTRY_MENU[pastryId]) ? PASTRY_MENU[pastryId].name : 'Bánh ngọt';
+            showToast(`⚠️ Kho đã hết ${pName}! Hãy vào Cửa hàng nhập thêm.`);
+            playSoundEffect('error');
+            return;
+        }
+
+        gameState.cup.pastryId = pastryId;
+        playSoundEffect('topping');
+        const pName = (typeof PASTRY_MENU !== 'undefined' && PASTRY_MENU[pastryId]) ? PASTRY_MENU[pastryId].name : 'Bánh';
+        showToast(`🥐 Đã lấy ${pName} lên đĩa chuẩn bị cho khách!`);
+    }
+
     updateCraftingUI();
 }
 
@@ -168,7 +197,15 @@ function collectPayment() {
     }
 }
 
-function startNewDay() {
+function triggerStartDayProcess() {
+    if (typeof openDailyMenuModal === 'function') {
+        openDailyMenuModal();
+    } else {
+        commitStartNewDay();
+    }
+}
+
+function commitStartNewDay() {
     playSoundEffect('bell');
     gameState.day += 1;
 
@@ -184,12 +221,14 @@ function startNewDay() {
     }
 
     updateTopStatsUI();
-    showToast(`☀️ Bắt đầu Ngày làm việc thứ ${gameState.day}! Chúc tiệm buôn may bán đắt!`);
+    showToast(`☀️ Bắt đầu Ngày làm việc thứ ${gameState.day}! Quán phục vụ theo Menu bạn đã chọn!`);
 
     if (gameState.phase === 'WAITING_SPAWN') {
         spawnNextCustomer();
     }
 }
+
+const startNewDay = triggerStartDayProcess;
 
 function confirmResetGame() {
     playSoundEffect('bell');
@@ -205,18 +244,25 @@ function confirmResetGame() {
     if (typeof removeStaff3D === 'function') {
         removeStaff3D('waiter', scene);
         removeStaff3D('barista_assistant', scene);
+        removeStaff3D('pastry_chef', scene);
+        removeStaff3D('greeter_dog', scene);
     }
 
     gameState.upgrades = {
         neon_sign: false,
         music_box: false,
         cozy_carpet: false,
-        auto_sealer: false
+        auto_sealer: false,
+        bakery_counter: false,
+        extra_tables: false,
+        expand_shop: false
     };
 
     gameState.staff = {
         waiter: false,
-        barista_assistant: false
+        barista_assistant: false,
+        pastry_chef: false,
+        greeter_dog: false
     };
 
     gameState.inventory = {

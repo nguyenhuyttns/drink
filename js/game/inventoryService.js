@@ -141,3 +141,34 @@ function buyInventoryItem(itemId, isPack) {
     const typeStr = isPack ? `thùng sỉ (+${qty} ${item.unit})` : `1 ${item.unit}`;
     showToast(`📦 Đã nhập thành công ${typeStr} "${item.name}"!`);
 }
+
+/**
+ * Kiểm tra xem có đủ bánh ngọt trong kho để phục vụ không
+ * @param {string} pastryId 
+ * @returns {boolean}
+ */
+function checkCanServePastry(pastryId) {
+    const stock = gameState.inventory[pastryId] || 0;
+    if (stock <= 0) {
+        const item = INVENTORY_ITEMS[pastryId] || { name: pastryId };
+        playSoundEffect('error');
+        showToast(`⚠️ Hết ${item.name}! Hãy vào Kho & Chợ Sỉ để nhập bánh.`);
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Tiêu hao 1 chiếc bánh ngọt khi phục vụ
+ * @param {string} pastryId 
+ */
+function consumePastry(pastryId) {
+    if (gameState.inventory[pastryId] > 0) {
+        gameState.inventory[pastryId] -= 1;
+        gameState.dayStats.pastriesSold = (gameState.dayStats.pastriesSold || 0) + 1;
+    }
+    if (typeof updateInventoryBadgesUI === 'function') {
+        updateInventoryBadgesUI();
+    }
+}
+

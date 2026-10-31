@@ -1,6 +1,6 @@
 /* ============================================================================
  * DỊCH VỤ QUẢN LÝ MENU & GIÁ BÁN (MENU SERVICE)
- * Xử lý bật/tắt món mở bán, tùy biến giá niêm yết và tính toán tỷ suất lợi nhuận.
+ * Xử lý chọn món bán trong ngày (Trà, Topping, Bánh Ngọt) và tùy chỉnh giá niêm yết.
  * ============================================================================ */
 
 /**
@@ -9,70 +9,129 @@
  * @returns {number}
  */
 function calculateDrinkCost(teaId) {
-    let cost = (INVENTORY_ITEMS.cup_pack ? INVENTORY_ITEMS.cup_pack.costSingle : 1000); // Giá ly nắp
-
+    let cost = (INVENTORY_ITEMS.cup_pack ? INVENTORY_ITEMS.cup_pack.costSingle : 1000);
     const required = TEA_RECIPES[teaId] || [];
     required.forEach(ingId => {
         if (INVENTORY_ITEMS[ingId]) {
             cost += INVENTORY_ITEMS[ingId].costSingle;
         }
     });
-
     return cost;
 }
 
 /**
- * Lấy danh sách ID các món đang được bật mở bán
+ * Tính toán giá vốn của 1 chiếc bánh ngọt
+ * @param {string} pastryId 
+ * @returns {number}
+ */
+function calculatePastryCost(pastryId) {
+    return INVENTORY_ITEMS[pastryId] ? INVENTORY_ITEMS[pastryId].costSingle : 5000;
+}
+
+/**
+ * Lấy danh sách ID các loại trà đang được mở bán trong ngày
  * @returns {string[]}
  */
 function getActiveTeaIds() {
     const active = [];
-    if (!gameState.menuConfig) return Object.keys(TEA_MENU);
-
+    const cfg = gameState.menuConfig && gameState.menuConfig.teas ? gameState.menuConfig.teas : {};
     Object.keys(TEA_MENU).forEach(teaId => {
-        if (gameState.menuConfig[teaId] && gameState.menuConfig[teaId].enabled) {
+        if (!cfg[teaId] || cfg[teaId].enabled) {
             active.push(teaId);
         }
     });
-
-    // Nếu người chơi tắt hết món, mặc định mở classic để không làm đơ game
     return active.length > 0 ? active : ['classic'];
 }
 
 /**
- * Lấy giá bán hiện tại của món (ưu tiên giá người chơi đã chỉnh)
+ * Lấy danh sách ID các loại Topping đang được mở bán trong ngày
+ * @returns {string[]}
+ */
+function getActiveToppingIds() {
+    const active = [];
+    const cfg = gameState.menuConfig && gameState.menuConfig.toppings ? gameState.menuConfig.toppings : {};
+    Object.keys(TOPPING_MENU).forEach(topId => {
+        if (!cfg[topId] || cfg[topId].enabled) {
+            active.push(topId);
+        }
+    });
+    return active;
+}
+
+/**
+ * Lấy danh sách ID các loại Bánh Ngọt đang được mở bán trong ngày
+ * @returns {string[]}
+ */
+function getActivePastryIds() {
+    const active = [];
+    if (typeof PASTRY_MENU === 'undefined') return [];
+    const cfg = gameState.menuConfig && gameState.menuConfig.pastries ? gameState.menuConfig.pastries : {};
+    Object.keys(PASTRY_MENU).forEach(pastryId => {
+        if (!cfg[pastryId] || cfg[pastryId].enabled) {
+            active.push(pastryId);
+        }
+    });
+    return active;
+}
+
+/**
+ * Lấy giá bán hiện tại của món trà
  * @param {string} teaId 
  * @returns {number}
  */
 function getDrinkCurrentPrice(teaId) {
-    if (gameState.menuConfig && gameState.menuConfig[teaId] && typeof gameState.menuConfig[teaId].price === 'number') {
-        return gameState.menuConfig[teaId].price;
+    const cfg = gameState.menuConfig && gameState.menuConfig.teas ? gameState.menuConfig.teas[teaId] : null;
+    if (cfg && typeof cfg.price === 'number') {
+        return cfg.price;
     }
     return TEA_MENU[teaId] ? TEA_MENU[teaId].price : 25000;
 }
 
 /**
- * Bật hoặc tắt trạng thái mở bán của món
- * @param {string} teaId 
+ * Lấy giá bán hiện tại của bánh ngọt
+ * @param {string} pastryId 
+ * @returns {number}
  */
-function toggleMenuItemState(teaId) {
-    if (!gameState.menuConfig[teaId]) {
-        gameState.menuConfig[teaId] = { enabled: true, price: TEA_MENU[teaId].price };
+function getPastryCurrentPrice(pastryId) {
+    const cfg = gameState.menuConfig && gameState.menuConfig.pastries ? gameState.menuConfig.pastries[pastryId] : null;
+    if (cfg && typeof cfg.price === 'number') {
+        return cfg.price;
+    }
+    return (typeof PASTRY_MENU !== 'undefined' && PASTRY_MENU[pastryId]) ? PASTRY_MENU[pastryId].price : 15000;
+}
+
+/**
+ * Bật/tắt trạng thái mở bán món (Trà, Topping, Bánh)
+ * @param {'teas' | 'toppings' | 'pastries'} category 
+ * @param {string} itemId 
+ */
+function toggleMenuItemState(category, itemId) {
+    if (!gameState.menuConfig[category]) {
+        gameState.menuConfig[category] = {};
+    }
+    if (!gameState.menuConfig[category][itemId]) {
+        gameState.menuConfig[category][itemId] = { enabled: true };
     }
 
-    // Đảm bảo ít nhất 1 món đang bật
-    const activeCount = getActiveTeaIds().length;
-    if (gameState.menuConfig[teaId].enabled && activeCount <= 1) {
-        playSoundEffect('error');
-        showToast('⚠️ Quán phải duy trì ít nhất 1 món mở bán trên thực đơn!');
-        return;
+    // Đảm bảo còn ít nhất 1 loại trà mở bán
+    if (category === 'teas') {
+        const activeCount = getActiveTeaIds().length;
+        if (gameState.menuConfig.teas[itemId].enabled && activeCount <= 1) {
+            playSoundEffect('error');
+            showToast('⚠️ Quán phải duy trì ít nhất 1 loại trà mở bán!');
+            return;
+        }
     }
 
-    gameState.menuConfig[teaId].enabled = !gameState.menuConfig[teaId].enabled;
+    const current = gameState.menuConfig[category][itemId].enabled;
+    gameState.menuConfig[category][itemId].enabled = !current;
     playSoundEffect('click');
 
-    const status = gameState.menuConfig[teaId].enabled ? 'MỞ BÁN' : 'TẠM DỪNG BÁN';
-    showToast(`📋 Đã chuyển "${TEA_MENU[teaId].name}" sang trạng thái: ${status}`);
+    const name = (category === 'teas') 
+        ? TEA_MENU[itemId].name 
+        : (category === 'toppings' ? TOPPING_MENU[itemId].name : PASTRY_MENU[itemId].name);
+    const status = gameState.menuConfig[category][itemId].enabled ? 'MỞ BÁN' : 'TẠM DỪNG BÁN';
+    showToast(`📋 ${name}: ${status}`);
 
     if (typeof renderMenuSettingsModal === 'function') {
         renderMenuSettingsModal();
@@ -81,26 +140,24 @@ function toggleMenuItemState(teaId) {
 
 /**
  * Tăng / giảm giá bán của món
- * @param {string} teaId 
- * @param {number} delta e.g. +1000 or -1000
+ * @param {'teas' | 'pastries'} category 
+ * @param {string} itemId 
+ * @param {number} delta 
  */
-function adjustMenuItemPrice(teaId, delta) {
-    if (!gameState.menuConfig[teaId]) {
-        gameState.menuConfig[teaId] = { enabled: true, price: TEA_MENU[teaId].price };
+function adjustMenuItemPrice(category, itemId, delta) {
+    if (!gameState.menuConfig[category]) gameState.menuConfig[category] = {};
+    if (!gameState.menuConfig[category][itemId]) {
+        const defaultPrice = (category === 'teas') ? TEA_MENU[itemId].price : PASTRY_MENU[itemId].price;
+        gameState.menuConfig[category][itemId] = { enabled: true, price: defaultPrice };
     }
 
-    const newPrice = gameState.menuConfig[teaId].price + delta;
-    // Giới hạn giá hợp lý: từ 15.000đ đến 60.000đ
-    if (newPrice < 15000) {
-        showToast('⚠️ Giá bán tối thiểu là 15.000đ để tránh lỗ vốn!');
-        return;
-    }
-    if (newPrice > 60000) {
-        showToast('⚠️ Giá bán tối đa là 60.000đ kẻo khách hàng bỏ chạy!');
+    const newPrice = gameState.menuConfig[category][itemId].price + delta;
+    if (newPrice < 10000 || newPrice > 60000) {
+        showToast('⚠️ Giá bán phải nằm trong khoảng từ 10.000đ đến 60.000đ!');
         return;
     }
 
-    gameState.menuConfig[teaId].price = newPrice;
+    gameState.menuConfig[category][itemId].price = newPrice;
     playSoundEffect('click');
 
     if (typeof renderMenuSettingsModal === 'function') {

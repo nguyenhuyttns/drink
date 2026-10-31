@@ -19,19 +19,23 @@ const gameState = {
     phase: 'WAITING_SPAWN',
     currentOrder: null,
 
-    // Trạng thái ly trà sữa đang pha trên quầy
+    // Trạng thái ly trà sữa và đĩa bánh đang chuẩn bị trên quầy
     cup: {
         teaId: null,
         toppings: new Set(),
+        pastryId: null,
         isSealed: false
     },
 
     // Các vật phẩm nâng cấp đã sở hữu
     upgrades: {
-        neon_sign: false,   // Biển Neon phát sáng lung linh
-        music_box: false,   // Máy phát nhạc cổ điển (Tăng thêm 20% tiền tip)
-        cozy_carpet: false, // Thảm hoa nhung trước quầy
-        auto_sealer: false  // Máy dập nắp mạ vàng tự động
+        neon_sign: false,       // Biển Neon phát sáng lung linh
+        music_box: false,       // Máy phát nhạc cổ điển (Tăng thêm 20% tiền tip)
+        cozy_carpet: false,     // Thảm hoa nhung trước quầy
+        auto_sealer: false,     // Máy dập nắp mạ vàng tự động
+        bakery_counter: false,  // Quầy tủ kính bánh ngọt 3D sang trọng
+        extra_tables: false,    // Cụm bàn ghế #3 & #4 (tăng lên 8 chỗ ngồi)
+        expand_shop: false      // Mở rộng diện tích đất tiệm & đèn thả trần
     },
 
     // 1. Kho nguyên liệu (Số lượng từng nguyên liệu có sẵn)
@@ -45,21 +49,42 @@ const gameState = {
         jelly: 20,
         pudding: 15,
         cheese: 12,
-        cup_pack: 35
+        cup_pack: 35,
+        // Bánh ngọt
+        croissant: 8,
+        donut: 8,
+        macaron: 8,
+        cupcake: 8
     },
 
-    // 2. Cấu hình Menu & Giá bán tùy chỉnh
+    // 2. Cấu hình Thực Đơn Chọn Món Bán Trong Ngày
     menuConfig: {
-        classic: { enabled: true, price: 25000 },
-        matcha: { enabled: true, price: 30000 },
-        choco: { enabled: true, price: 30000 },
-        peach: { enabled: true, price: 25000 }
+        teas: {
+            classic: { enabled: true, price: 25000 },
+            matcha: { enabled: true, price: 30000 },
+            choco: { enabled: true, price: 30000 },
+            peach: { enabled: true, price: 25000 }
+        },
+        toppings: {
+            boba: { enabled: true, price: 5000 },
+            jelly: { enabled: true, price: 5000 },
+            pudding: { enabled: true, price: 7000 },
+            cheese: { enabled: true, price: 10000 }
+        },
+        pastries: {
+            croissant: { enabled: true, price: 15000 },
+            donut: { enabled: true, price: 18000 },
+            macaron: { enabled: true, price: 22000 },
+            cupcake: { enabled: true, price: 20000 }
+        }
     },
 
     // 3. Nhân sự của quán
     staff: {
         waiter: false,            // Bé Thỏ chạy bàn (tự dọn bàn)
-        barista_assistant: false  // Bé Gấu phụ quầy (tự rót trà)
+        barista_assistant: false, // Bé Gấu phụ quầy (tự rót trà & topping)
+        pastry_chef: false,       // Bé Mèo thợ bánh (tự chuẩn bị bánh ngọt)
+        greeter_dog: false        // Bé Cún tiếp tân (tăng kiên nhẫn hàng chờ)
     },
 
     // 4. Nhật ký tài chính trong ngày
@@ -67,6 +92,7 @@ const gameState = {
         ingredientSpent: 0,
         wagesPaid: 0,
         cupsSold: 0,
+        pastriesSold: 0,
         revenueToday: 0
     }
 };

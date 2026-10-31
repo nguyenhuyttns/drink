@@ -64,3 +64,35 @@ const TOPPING_MENU = {
         icon: '🧀'
     }
 };
+
+const PASTRY_MENU = {
+    croissant: {
+        id: 'croissant',
+        name: 'Bánh Sừng Bò (Croissant)',
+        price: 15000,
+        icon: '🥐',
+        color: 0xf59e0b
+    },
+    donut: {
+        id: 'donut',
+        name: 'Bánh Donut Dâu Cốm',
+        price: 18000,
+        icon: '🍩',
+        color: 0xf472b6
+    },
+    macaron: {
+        id: 'macaron',
+        name: 'Bánh Macaron Pháp',
+        price: 22000,
+        icon: '🧁',
+        color: 0x38bdf8
+    },
+    cupcake: {
+        id: 'cupcake',
+        name: 'Bánh Cupcake Kem Bơ',
+        price: 20000,
+        icon: '🍰',
+        color: 0xec4899
+    }
+};
+

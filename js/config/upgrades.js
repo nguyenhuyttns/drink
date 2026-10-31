@@ -32,12 +32,30 @@ const SHOP_UPGRADES = [
         benefit: '💵 Tăng thêm +5.000đ tiền tip cho mỗi lượt khách ngồi bàn'
     },
     {
-        id: 'auto_sealer',
-        name: 'Máy Dập Nắp Mạ Vàng Tự Động',
-        price: 160000,
-        icon: '⚡',
-        category: 'Nâng Cấp Máy',
-        desc: 'Mạ vàng hoàng gia cho máy dập nắp. Khi bạn pha đúng công thức, máy tự động dập nắp tức thì!',
-        benefit: '⚡ Tự động đóng nắp ngay khi đủ trà & topping'
+        id: 'bakery_counter',
+        name: 'Quầy Tủ Kính Bánh Ngọt 3D',
+        price: 60000,
+        icon: '🥐',
+        category: 'Khu Bánh Ngọt',
+        desc: 'Tủ kính trong suốt đặt cạnh quầy pha chế, trưng bày bánh sừng bò, donut và macaron rực rỡ.',
+        benefit: '🧁 Cho phép bán kèm bánh ngọt tăng doanh thu khủng'
+    },
+    {
+        id: 'extra_tables',
+        name: 'Cụm Bàn Ghế Gỗ Pastel #3 & #4',
+        price: 80000,
+        icon: '🪑',
+        category: 'Nội Thất Mở Rộng',
+        desc: 'Thêm 2 bàn tròn & 4 ghế đẩu êm ái, nâng sức chứa khách ngồi tại quán từ 4 lên 8 chỗ!',
+        benefit: '👥 Đón được gấp đôi lượng khách uống tại quán'
+    },
+    {
+        id: 'expand_shop',
+        name: 'Mở Rộng Mặt Bằng Quán & Đèn Thả',
+        price: 150000,
+        icon: '🏡',
+        category: 'Mặt Bằng & Đất',
+        desc: 'Nới rộng không gian sàn gỗ sang trọng, lắp dàn đèn trần ấm áp và chậu cây nhiệt đới xanh mát.',
+        benefit: '✨ Mặt bằng rộng gấp đôi, hàng khách xếp dài đông đúc'
     }
 ];

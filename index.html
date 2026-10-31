@@ -109,7 +109,11 @@
             </div>
 
             <!-- Management Action Buttons -->
+            <!-- Management Action Buttons -->
             <div class="flex items-center gap-2 interactive flex-wrap">
+                <button onclick="openDailyMenuModal()" class="pastel-panel hover:bg-rose-50 text-rose-600 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-1.5 shadow-sm" title="Chọn thực đơn món mở bán trong ngày">
+                    🥐 Menu Bán Hôm Nay
+                </button>
                 <button onclick="openInventoryModal()" class="pastel-panel hover:bg-emerald-50 text-emerald-600 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-1.5 shadow-sm" title="Mở kho & chợ sỉ nguyên liệu">
                     📦 Kho Hàng
                 </button>
@@ -192,6 +196,11 @@
                             </ul>
                         </div>
 
+                        <!-- Pastry Row if Customer Ordered Pastry -->
+                        <div id="order-pastry-row" class="hidden border-t border-dashed border-pink-100 pt-2">
+                            <!-- Filled dynamically -->
+                        </div>
+
                         <div class="border-t border-pink-200 pt-2 flex items-center justify-between">
                             <span class="text-xs font-bold text-gray-500">Tổng giá đơn:</span>
                             <span id="order-total-price" class="text-base font-extrabold text-emerald-600">35.000đ</span>
@@ -200,19 +209,24 @@
                 </div>
             </div>
 
-            <!-- RIGHT: Barista Crafting Station -->
-            <div id="crafting-panel" class="pastel-panel interactive rounded-3xl p-4 w-full md:w-96 max-h-full overflow-y-auto transition-all">
+            <!-- RIGHT: Barista Crafting Station (Pop-up/Slide Drawer cho đỡ vướng tầm nhìn 3D) -->
+            <div id="crafting-panel" class="pastel-panel interactive rounded-3xl p-4 w-full md:w-96 max-h-[88vh] overflow-y-auto transition-all crafting-panel-drawer is-collapsed shadow-2xl fixed md:fixed right-3 bottom-20 md:top-24 md:bottom-auto z-30">
                 <div class="flex items-center justify-between border-b-2 border-pink-100 pb-2.5 mb-3">
                     <div class="flex items-center gap-2">
                         <span class="text-xl">🧋</span>
                         <div>
-                            <h2 class="font-title text-base text-pink-600 leading-none">Quầy Pha Chế 3D</h2>
-                            <span class="text-[11px] text-gray-400 font-semibold">Nhìn ly 3D trên bàn để xem hiệu ứng</span>
+                            <h2 class="font-title text-base text-pink-600 leading-none">Quầy Pha Chế & Bánh</h2>
+                            <span class="text-[11px] text-gray-400 font-semibold">Nhấn vào quầy 3D để mở nhanh</span>
                         </div>
                     </div>
-                    <button onclick="clearCurrentCup(true)" class="text-xs font-bold bg-rose-100 hover:bg-rose-200 text-rose-600 px-2.5 py-1.5 rounded-xl transition flex items-center gap-1" title="Đổ bỏ ly hiện tại và làm lại">
-                        🗑️ Làm lại ly
-                    </button>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="clearCurrentCup(true)" class="text-xs font-bold bg-rose-100 hover:bg-rose-200 text-rose-600 px-2 py-1 rounded-xl transition flex items-center gap-1" title="Đổ bỏ ly hiện tại và làm lại">
+                            🗑️ Đổ lại
+                        </button>
+                        <button onclick="closeCraftingPanel()" class="w-7 h-7 rounded-full bg-gray-100 hover:bg-rose-100 text-gray-500 hover:text-rose-600 font-bold flex items-center justify-center transition" title="Đóng bảng pha chế cho đỡ vướng">
+                            ✕
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Step 1: Select Base Tea -->
@@ -259,7 +273,7 @@
                 <!-- Step 2: Select Toppings -->
                 <div class="mb-3">
                     <div class="flex items-center justify-between mb-1.5">
-                        <span class="text-xs font-extrabold text-gray-600 uppercase tracking-wider">2. Thêm Topping (Có thể chọn nhiều)</span>
+                        <span class="text-xs font-extrabold text-gray-600 uppercase tracking-wider">2. Thêm Topping (Tùy chọn)</span>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <button onclick="toggleTopping('boba')" id="btn-top-boba" class="top-btn relative flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
@@ -296,10 +310,20 @@
                     </div>
                 </div>
 
+                <!-- Step 3: Select Pastries (Bánh Kẹo & Bánh Ngọt) -->
+                <div class="mb-3">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-extrabold text-gray-600 uppercase tracking-wider">3. Chọn Bánh Kẹo (Nếu khách gọi)</span>
+                    </div>
+                    <div id="crafting-pastries-grid" class="grid grid-cols-2 gap-2">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
                 <!-- Current Cup Status Summary -->
                 <div class="bg-pink-50/90 rounded-2xl p-2.5 border border-pink-200 mb-3 flex items-center justify-between">
                     <div>
-                        <div class="text-[11px] font-bold text-gray-500">Ly đang pha trên quầy:</div>
+                        <div class="text-[11px] font-bold text-gray-500">Món đang chuẩn bị trên quầy:</div>
                         <div id="cup-summary-text" class="text-xs font-extrabold text-pink-700">Ly rỗng (Hãy chọn cốt trà)</div>
                     </div>
                     <div class="text-right">
@@ -308,12 +332,18 @@
                     </div>
                 </div>
 
-                <!-- Step 3: Seal & Serve Button -->
+                <!-- Step 4: Seal & Serve Button -->
                 <button id="btn-finish-drink" onclick="finishAndServeDrink()" class="btn-cute w-full bg-pink-500 hover:bg-pink-600 text-white font-title text-base py-3 rounded-2xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span>✨ Đóng Nắp & Giao Đồ Uống</span>
+                    <span>✨ Đóng Nắp & Giao Cho Khách</span>
                 </button>
             </div>
         </div>
+
+        <!-- Floating button to toggle Crafting Panel -->
+        <button id="btn-toggle-crafting" onclick="toggleCraftingPanel()" class="interactive fixed right-4 bottom-5 z-20 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-title text-sm sm:text-base px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 border-2 border-white/60 transition transform hover:scale-105 active:scale-95" title="Mở bảng pha chế và chọn món">
+            <span class="text-xl">🧋</span>
+            <span>Bảng Pha Chế & Bánh</span>
+        </button>
 
         <!-- BOTTOM BAR: Status Notification Toast -->
         <div class="flex justify-center pointer-events-none">
@@ -490,6 +520,47 @@
             <div id="staff-roles-list" class="grid grid-cols-1 gap-3.5 overflow-y-auto pr-1">
                 <!-- Rendered dynamically -->
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL: LÊN THỰC ĐƠN BÁN HẰNG NGÀY (DAILY MENU PLANNING) -->
+    <div id="daily-menu-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div class="pastel-panel interactive rounded-3xl p-5 sm:p-6 w-full max-w-xl max-h-[90vh] flex flex-col animate-pop shadow-2xl">
+            <div class="flex items-center justify-between border-b-2 border-pink-100 pb-3 mb-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-3xl">☀️</span>
+                    <div>
+                        <h3 class="font-title text-xl text-pink-600 leading-none">Thực Đơn Mở Bán Cho Ngày Mới</h3>
+                        <span class="text-xs text-gray-500 font-semibold">Khách đến sẽ chỉ gọi những món tiệm bật bán hôm nay</span>
+                    </div>
+                </div>
+                <button onclick="closeDailyMenuModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-rose-100 text-gray-500 hover:text-rose-600 font-bold flex items-center justify-center transition">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Tabs: Trà Cơ Bản | Topping | Bánh Ngọt -->
+            <div class="flex items-center gap-2 mb-3 border-b border-pink-100 pb-2.5">
+                <button id="tab-daily-teas" onclick="setDailyMenuCategory('teas')" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-pink-500 text-white shadow-sm transition">
+                    🍵 Cốt Trà Bán
+                </button>
+                <button id="tab-daily-toppings" onclick="setDailyMenuCategory('toppings')" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-gray-600 hover:bg-pink-50 transition border border-pink-100">
+                    🍡 Topping Bán
+                </button>
+                <button id="tab-daily-pastries" onclick="setDailyMenuCategory('pastries')" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-gray-600 hover:bg-pink-50 transition border border-pink-100">
+                    🥐 Bánh Kẹo Bán
+                </button>
+            </div>
+
+            <!-- Items list -->
+            <div id="daily-menu-items-list" class="grid grid-cols-1 gap-2.5 overflow-y-auto pr-1 flex-1 mb-4 max-h-[50vh]">
+                <!-- Rendered dynamically -->
+            </div>
+
+            <!-- Confirm & Start Day -->
+            <button onclick="confirmDailyMenuAndStartDay()" class="btn-mint w-full bg-emerald-500 hover:bg-emerald-600 text-white font-title text-lg py-3.5 rounded-2xl shadow-lg flex items-center justify-center gap-2">
+                <span>🚀 Mở Cửa Quán & Bắt Đầu Phục Vụ</span>
+            </button>
         </div>
     </div>
 

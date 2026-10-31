@@ -120,6 +120,52 @@ const INVENTORY_ITEMS = {
         packCost: 12000,
         category: 'packaging',
         desc: 'Ly nhựa chịu nhiệt in logo quán và màng dập nắp tiệt trùng'
+    },
+
+    // 5. QUẦY BÁNH NGỌT & ĂN VẶT (BAKERY & SNACKS)
+    croissant: {
+        id: 'croissant',
+        name: 'Bánh Sừng Bò Bơ Pháp (Croissant)',
+        unit: 'cái',
+        icon: '🥐',
+        costSingle: 5000,
+        packQty: 10,
+        packCost: 40000,
+        category: 'pastry',
+        desc: 'Bánh nướng ngàn lớp thơm lừng mùi bơ béo ngậy'
+    },
+    donut: {
+        id: 'donut',
+        name: 'Bánh Donut Dâu Cốm',
+        unit: 'cái',
+        icon: '🍩',
+        costSingle: 6000,
+        packQty: 10,
+        packCost: 48000,
+        category: 'pastry',
+        desc: 'Bánh vòng phủ sốt dâu hồng và rắc cốm cầu vồng giòn tan'
+    },
+    macaron: {
+        id: 'macaron',
+        name: 'Bánh Macaron Pháp Cao Cấp',
+        unit: 'hộp',
+        icon: '🧁',
+        costSingle: 8000,
+        packQty: 10,
+        packCost: 65000,
+        category: 'pastry',
+        desc: 'Hộp bánh macaron sắc màu hạnh nhân chuẩn vị Paris'
+    },
+    cupcake: {
+        id: 'cupcake',
+        name: 'Bánh Cupcake Kem Bơ',
+        unit: 'cái',
+        icon: '🍰',
+        costSingle: 7000,
+        packQty: 10,
+        packCost: 55000,
+        category: 'pastry',
+        desc: 'Bánh bông lan mini mềm mịn phủ kem tươi hoa hồng'
     }
 };
 

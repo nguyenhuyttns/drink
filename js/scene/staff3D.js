@@ -107,6 +107,158 @@ function buildAssistantBarista3D(targetScene) {
     return assistantBaristaMeshGroup;
 }
 
+let pastryChefMeshGroup = null;
+let pastryChefLimbs = null;
+let greeterDogMeshGroup = null;
+let greeterDogLimbs = null;
+let greeterDogTail = null;
+
+/**
+ * Dựng mô hình Bé Mèo Bếp Bánh Chibi 3D (Pastry Chef)
+ * @param {THREE.Scene} targetScene 
+ */
+function buildPastryChef3D(targetScene) {
+    if (pastryChefMeshGroup) return pastryChefMeshGroup;
+
+    pastryChefMeshGroup = new THREE.Group();
+    // Vị trí đứng ngay phía sau Quầy Bán Bánh Ngọt
+    pastryChefMeshGroup.position.set(-4.3, 0.22, -1.9);
+    pastryChefMeshGroup.rotation.y = 0; // Quay mặt về phía trước quầy đón khách
+
+    const fig = createFullyArticulatedChibi({
+        name: 'Bé Mèo Bếp Bánh',
+        ageGroup: 'child',
+        gender: 'female',
+        skinTone: 0xffedd5,
+        hairColor: 0xfef08a, // Tóc vàng óng bánh mì
+        hairStyle: 'puffs',
+        shirtColor: 0xffffff, // Áo bếp trưởng trắng muốt
+        pantsColor: 0x374151,
+        shoesColor: 0x111827
+    });
+
+    pastryChefMeshGroup.add(fig.root);
+    pastryChefLimbs = fig;
+
+    // Chiếc mũ Bếp Trưởng xốp trắng bồng bềnh
+    const hatBase = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.24, 0.22, 0.16, 16),
+        new THREE.MeshLambertMaterial({ color: 0xffffff })
+    );
+    hatBase.position.set(0, 1.48, 0);
+
+    const hatPuff = new THREE.Mesh(
+        new THREE.SphereGeometry(0.28, 14, 12),
+        new THREE.MeshLambertMaterial({ color: 0xffffff })
+    );
+    hatPuff.position.set(0, 1.62, 0);
+    hatPuff.scale.set(1.15, 0.85, 1.15);
+
+    // Đôi tai mèo hồng xinh xắn bên cạnh mũ
+    const catEarMat = new THREE.MeshLambertMaterial({ color: 0xfbcfe8 });
+    [-0.24, 0.24].forEach(x => {
+        const ear = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.14, 8), catEarMat);
+        ear.position.set(x, 1.46, 0);
+        ear.rotation.z = x * -0.4;
+        fig.root.add(ear);
+    });
+
+    // Chiếc khăn quàng cổ đỏ thắm của đầu bếp
+    const scarf = new THREE.Mesh(
+        new THREE.TorusGeometry(0.18, 0.05, 8, 16),
+        new THREE.MeshLambertMaterial({ color: 0xe11d48 })
+    );
+    scarf.position.set(0, 0.92, 0);
+    scarf.rotation.x = Math.PI / 2;
+
+    fig.root.add(hatBase, hatPuff, scarf);
+
+    // Khay bánh nướng sáng bóng trên tay
+    const tray = new THREE.Mesh(
+        new THREE.BoxGeometry(0.42, 0.02, 0.28),
+        new THREE.MeshLambertMaterial({ color: 0xfde68a })
+    );
+    tray.position.set(0, -0.32, 0.22);
+    
+    // 2 chiếc bánh croissant vàng trên khay
+    const miniCroissMat = new THREE.MeshLambertMaterial({ color: 0xf59e0b });
+    [-0.1, 0.1].forEach(x => {
+        const c = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.02, 6, 10, Math.PI), miniCroissMat);
+        c.position.set(x, 0.03, 0);
+        c.rotation.x = Math.PI / 2;
+        tray.add(c);
+    });
+
+    fig.rightArm.add(tray);
+    fig.rightArm.rotation.x = -0.75;
+    fig.leftArm.rotation.x = -0.75;
+
+    targetScene.add(pastryChefMeshGroup);
+    return pastryChefMeshGroup;
+}
+
+/**
+ * Dựng mô hình Bé Cún Tiếp Tân & Bảo Vệ Chibi 3D (Greeter Dog)
+ * @param {THREE.Scene} targetScene 
+ */
+function buildGreeterDog3D(targetScene) {
+    if (greeterDogMeshGroup) return greeterDogMeshGroup;
+
+    greeterDogMeshGroup = new THREE.Group();
+    // Vị trí đứng trước cửa quán chào đón khách vào
+    greeterDogMeshGroup.position.set(-4.5, 0, 2.75);
+    greeterDogMeshGroup.rotation.y = Math.PI / 4;
+
+    const fig = createFullyArticulatedChibi({
+        name: 'Bé Cún Tiếp Tân',
+        ageGroup: 'child',
+        gender: 'male',
+        skinTone: 0xfef08a,
+        hairColor: 0xd97706, // Lông vàng Shiba ấm áp
+        hairStyle: 'messy',
+        shirtColor: 0x3b82f6, // Áo vest đồng phục tiếp tân xanh biển
+        pantsColor: 0x1e3a8a,
+        shoesColor: 0x1f2937
+    });
+
+    greeterDogMeshGroup.add(fig.root);
+    greeterDogLimbs = fig;
+
+    // Đôi tai cún vểnh đáng yêu
+    const dogEarMat = new THREE.MeshLambertMaterial({ color: 0xb45309 });
+    const innerEarMat = new THREE.MeshLambertMaterial({ color: 0xfbcfe8 });
+    [-0.22, 0.22].forEach(x => {
+        const dEar = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.22, 8), dogEarMat);
+        dEar.position.set(x, 1.48, 0);
+        dEar.rotation.z = x * -0.3;
+
+        const inEar = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.16, 6), innerEarMat);
+        inEar.position.set(x, 1.48, 0.03);
+        inEar.rotation.z = x * -0.3;
+        fig.root.add(dEar, inEar);
+    });
+
+    // Huy hiệu sao vàng trước ngực
+    const badge = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.06, 0.02, 8),
+        new THREE.MeshLambertMaterial({ color: 0xfacc15 })
+    );
+    badge.position.set(0.12, 0.72, 0.16);
+    badge.rotation.x = Math.PI / 2;
+    fig.root.add(badge);
+
+    // Chiếc đuôi ngoe nguẩy vui mừng phía sau
+    const tailGeo = new THREE.CylinderGeometry(0.03, 0.05, 0.28, 8);
+    const tailMat = new THREE.MeshLambertMaterial({ color: 0xd97706 });
+    greeterDogTail = new THREE.Mesh(tailGeo, tailMat);
+    greeterDogTail.position.set(0, 0.38, -0.22);
+    greeterDogTail.rotation.x = -Math.PI / 3;
+    fig.root.add(greeterDogTail);
+
+    targetScene.add(greeterDogMeshGroup);
+    return greeterDogMeshGroup;
+}
+
 /**
  * Xóa mô hình nhân viên khi reset hoặc sa thải
  * @param {string} roleId 
@@ -124,5 +276,14 @@ function removeStaff3D(roleId, targetScene) {
         targetScene.remove(assistantBaristaMeshGroup);
         assistantBaristaMeshGroup = null;
         assistantBaristaLimbs = null;
+    } else if (roleId === 'pastry_chef' && pastryChefMeshGroup) {
+        targetScene.remove(pastryChefMeshGroup);
+        pastryChefMeshGroup = null;
+        pastryChefLimbs = null;
+    } else if (roleId === 'greeter_dog' && greeterDogMeshGroup) {
+        targetScene.remove(greeterDogMeshGroup);
+        greeterDogMeshGroup = null;
+        greeterDogLimbs = null;
+        greeterDogTail = null;
     }
 }
