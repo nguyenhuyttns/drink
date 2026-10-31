@@ -1354,6 +1354,104 @@ function closeDailyReportModal() {
     if (modal) modal.classList.add('hidden');
 }
 
+/* ============================================================================
+ * 6. MODAL SAO LƯU & NẠP DỮ LIỆU GAME (SAVE / LOAD & BACKUP MODAL)
+ * ============================================================================ */
+
+let saveModalTimeInterval = null;
+
+function updateSaveModalInfo() {
+    // Cập nhật tên file dự kiến theo thời gian thực (backup_DDMMYYYY_HHmm.txt)
+    const elName = document.getElementById('save-filename-preview');
+    if (elName && typeof getBackupFileName === 'function') {
+        elName.textContent = getBackupFileName();
+    }
+
+    // Cập nhật trạng thái lưu trong LocalStorage
+    const elAutoStatus = document.getElementById('save-auto-status');
+    if (elAutoStatus) {
+        const lastSaved = localStorage.getItem('BOBA_SWEET_SAVE_DATA_V1_TIMESTAMP');
+        if (lastSaved) {
+            const date = new Date(parseInt(lastSaved, 10));
+            const timeStr = date.toLocaleTimeString('vi-VN');
+            elAutoStatus.innerHTML = `🟢 <strong>Đã lưu tự động</strong> (Lần cuối: ${timeStr})`;
+        } else {
+            elAutoStatus.innerHTML = `🟢 <strong>Sẵn sàng tự động lưu</strong> vào trình duyệt`;
+        }
+    }
+
+    // Hiển thị tóm tắt quán hiện tại
+    const elSummary = document.getElementById('save-game-summary');
+    if (elSummary) {
+        elSummary.innerHTML = `
+            <span>Ngày: <strong>${gameState.day}</strong></span> • 
+            <span>Tiền: <strong class="text-emerald-600">${formatVND(gameState.money)}</strong></span> • 
+            <span>Doanh thu: <strong>${formatVND(gameState.revenue)}</strong></span>
+        `;
+    }
+}
+
+function openSaveLoadModal() {
+    playSoundEffect('click');
+    const modal = document.getElementById('save-load-modal');
+    if (modal) {
+        updateSaveModalInfo();
+        modal.classList.remove('hidden');
+
+        // Reset file input label
+        const elChosen = document.getElementById('chosen-file-name');
+        if (elChosen) elChosen.classList.add('hidden');
+        const btnLoad = document.getElementById('btn-confirm-import-file');
+        if (btnLoad) {
+            btnLoad.disabled = true;
+            btnLoad.className = 'w-full py-2.5 rounded-xl font-bold text-xs bg-gray-200 text-gray-400 opacity-50 cursor-not-allowed transition';
+        }
+        const fileInput = document.getElementById('save-file-input');
+        if (fileInput) fileInput.value = '';
+
+        if (saveModalTimeInterval) clearInterval(saveModalTimeInterval);
+        saveModalTimeInterval = setInterval(updateSaveModalInfo, 5000);
+    }
+}
+
+function closeSaveLoadModal() {
+    playSoundEffect('click');
+    const modal = document.getElementById('save-load-modal');
+    if (modal) modal.classList.add('hidden');
+    if (saveModalTimeInterval) {
+        clearInterval(saveModalTimeInterval);
+        saveModalTimeInterval = null;
+    }
+}
+
+function handleSaveFileSelected(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    const elChosen = document.getElementById('chosen-file-name');
+    if (elChosen) {
+        elChosen.textContent = `📄 Đã chọn: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        elChosen.classList.remove('hidden');
+    }
+
+    const btnLoad = document.getElementById('btn-confirm-import-file');
+    if (btnLoad) {
+        btnLoad.disabled = false;
+        btnLoad.className = 'w-full py-2.5 rounded-xl font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-md transition cursor-pointer flex items-center justify-center gap-1.5';
+        btnLoad.onclick = () => {
+            if (typeof importSaveFromFile === 'function') {
+                importSaveFromFile(file);
+            }
+        };
+    }
+}
+
+window.openSaveLoadModal = openSaveLoadModal;
+window.closeSaveLoadModal = closeSaveLoadModal;
+window.updateSaveModalInfo = updateSaveModalInfo;
+window.handleSaveFileSelected = handleSaveFileSelected;
+
+
 
 
 

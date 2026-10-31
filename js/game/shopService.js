@@ -79,6 +79,9 @@ function buyUpgrade(upgradeId) {
     if (typeof renderDecorCustomizerModal === 'function') {
         renderDecorCustomizerModal();
     }
+    if (typeof saveToLocalStorage === 'function') {
+        saveToLocalStorage();
+    }
 }
 
 /**
@@ -124,6 +127,9 @@ function buyFlooring(floorId) {
 
     if (typeof renderDecorCustomizerModal === 'function') {
         renderDecorCustomizerModal();
+    }
+    if (typeof saveToLocalStorage === 'function') {
+        saveToLocalStorage();
     }
 }
 

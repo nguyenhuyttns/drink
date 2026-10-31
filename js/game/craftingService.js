@@ -326,6 +326,15 @@ function confirmResetGame() {
         renderShopItems();
     }
 
+    // Xóa bản lưu cũ và đồng bộ lại LocalStorage với dữ liệu ban đầu
+    try {
+        localStorage.removeItem('BOBA_SWEET_SAVE_DATA_V1');
+        localStorage.removeItem('BOBA_SWEET_SAVE_DATA_V1_TIMESTAMP');
+        if (typeof saveToLocalStorage === 'function') {
+            saveToLocalStorage();
+        }
+    } catch (e) {}
+
     showToast('🔄 Đã đặt lại game về trạng thái ban đầu với 100.000đ vốn!');
     setTimeout(() => {
         spawnNextCustomer();

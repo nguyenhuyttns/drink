@@ -59,6 +59,9 @@ function hireStaff(roleId, targetScene) {
     if (typeof renderStaffModal === 'function') {
         renderStaffModal();
     }
+    if (typeof saveToLocalStorage === 'function') {
+        saveToLocalStorage();
+    }
 }
 
 /**
@@ -80,6 +83,9 @@ function fireStaff(roleId, targetScene) {
 
     if (typeof renderStaffModal === 'function') {
         renderStaffModal();
+    }
+    if (typeof saveToLocalStorage === 'function') {
+        saveToLocalStorage();
     }
 }
 

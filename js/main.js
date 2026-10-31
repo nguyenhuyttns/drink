@@ -7,6 +7,11 @@ let sealingPressHeadMesh = null;
 let counterHitboxMeshRef = null;
 
 function initGame() {
+    // 0. Tự động khôi phục dữ liệu đã lưu từ LocalStorage nếu có
+    if (typeof loadFromLocalStorage === 'function') {
+        loadFromLocalStorage();
+    }
+
     // 1. Khởi tạo Three.js Scene, Camera, Renderer, Controls
     const { scene, camera, renderer, controls, clock } = init3DScene();
 
@@ -135,6 +140,13 @@ function initGame() {
     if (typeof updateTargetProgressUI === 'function') {
         updateTargetProgressUI();
     }
+
+    // Tự động lưu ngầm vào LocalStorage mỗi 45 giây
+    setInterval(() => {
+        if (typeof saveToLocalStorage === 'function') {
+            saveToLocalStorage();
+        }
+    }, 45000);
 
     // Bắt đầu ngày mới: Mở bảng chọn Mục tiêu & Chuẩn bị nguyên liệu/Menu mở bán
     setTimeout(() => {

@@ -205,6 +205,10 @@ function buyInventoryItem(itemId, isPack) {
 
     const typeStr = isPack ? `thùng sỉ (+${qty} ${item.unit})` : `1 ${item.unit}`;
     showToast(`📦 Đã nhập thành công ${typeStr} "${item.name}"!`);
+
+    if (typeof saveToLocalStorage === 'function') {
+        saveToLocalStorage();
+    }
 }
 
 /**

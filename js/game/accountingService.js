@@ -60,6 +60,10 @@ function recordOrderSaleAndCheckTarget(order) {
         gameState.dailyTarget.isReached = true;
         onDailyTargetReached();
     }
+
+    if (typeof saveToLocalStorage === 'function') {
+        saveToLocalStorage();
+    }
 }
 
 /**
