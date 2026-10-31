@@ -187,7 +187,7 @@
                         <span id="selected-tea-label" class="text-xs font-bold text-pink-500">Chưa chọn</span>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
-                        <button onclick="selectBaseTea('classic')" id="btn-tea-classic" class="tea-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                        <button onclick="selectBaseTea('classic')" id="btn-tea-classic" class="tea-btn relative flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
                             <span class="w-6 h-6 rounded-full flex-shrink-0 border border-amber-700/20 shadow-inner" style="background-color: #d2a679;"></span>
                             <div class="overflow-hidden">
                                 <div class="text-xs font-bold text-gray-800 truncate">Truyền thống</div>
@@ -195,7 +195,7 @@
                             </div>
                         </button>
 
-                        <button onclick="selectBaseTea('matcha')" id="btn-tea-matcha" class="tea-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                        <button onclick="selectBaseTea('matcha')" id="btn-tea-matcha" class="tea-btn relative flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
                             <span class="w-6 h-6 rounded-full flex-shrink-0 border border-emerald-700/20 shadow-inner" style="background-color: #88c999;"></span>
                             <div class="overflow-hidden">
                                 <div class="text-xs font-bold text-gray-800 truncate">Trà sữa Matcha</div>
@@ -203,7 +203,7 @@
                             </div>
                         </button>
 
-                        <button onclick="selectBaseTea('choco')" id="btn-tea-choco" class="tea-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                        <button onclick="selectBaseTea('choco')" id="btn-tea-choco" class="tea-btn relative flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
                             <span class="w-6 h-6 rounded-full flex-shrink-0 border border-amber-900/20 shadow-inner" style="background-color: #6b4423;"></span>
                             <div class="overflow-hidden">
                                 <div class="text-xs font-bold text-gray-800 truncate">Trà sữa Socola</div>
@@ -211,7 +211,7 @@
                             </div>
                         </button>
 
-                        <button onclick="selectBaseTea('peach')" id="btn-tea-peach" class="tea-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                        <button onclick="selectBaseTea('peach')" id="btn-tea-peach" class="tea-btn relative flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
                             <span class="w-6 h-6 rounded-full flex-shrink-0 border border-orange-500/20 shadow-inner" style="background-color: #ff9e5e;"></span>
                             <div class="overflow-hidden">
                                 <div class="text-xs font-bold text-gray-800 truncate">Trà Đào</div>
@@ -227,7 +227,7 @@
                         <span class="text-xs font-extrabold text-gray-600 uppercase tracking-wider">2. Thêm Topping (Có thể chọn nhiều)</span>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
-                        <button onclick="toggleTopping('boba')" id="btn-top-boba" class="top-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                        <button onclick="toggleTopping('boba')" id="btn-top-boba" class="top-btn relative flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
                             <span class="w-6 h-6 rounded-full bg-stone-900 text-white flex items-center justify-center text-xs flex-shrink-0">⚫</span>
                             <div class="overflow-hidden">
                                 <div class="text-xs font-bold text-gray-800 truncate">Trân châu đen</div>
@@ -235,7 +235,7 @@
                             </div>
                         </button>
 
-                        <button onclick="toggleTopping('jelly')" id="btn-top-jelly" class="top-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                        <button onclick="toggleTopping('jelly')" id="btn-top-jelly" class="top-btn relative flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
                             <span class="w-6 h-6 rounded-lg bg-pink-200 flex items-center justify-center text-xs flex-shrink-0">🍬</span>
                             <div class="overflow-hidden">
                                 <div class="text-xs font-bold text-gray-800 truncate">Thạch trái cây</div>
@@ -243,7 +243,7 @@
                             </div>
                         </button>
 
-                        <button onclick="toggleTopping('pudding')" id="btn-top-pudding" class="top-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                        <button onclick="toggleTopping('pudding')" id="btn-top-pudding" class="top-btn relative flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
                             <span class="w-6 h-6 rounded-lg bg-amber-300 flex items-center justify-center text-xs flex-shrink-0">🍮</span>
                             <div class="overflow-hidden">
                                 <div class="text-xs font-bold text-gray-800 truncate">Pudding trứng</div>
@@ -251,7 +251,7 @@
                             </div>
                         </button>
 
-                        <button onclick="toggleTopping('cheese')" id="btn-top-cheese" class="top-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                        <button onclick="toggleTopping('cheese')" id="btn-top-cheese" class="top-btn relative flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
                             <span class="w-6 h-6 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-xs flex-shrink-0">🧀</span>
                             <div class="overflow-hidden">
                                 <div class="text-xs font-bold text-gray-800 truncate">Kem Cheese</div>

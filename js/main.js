@@ -51,6 +51,9 @@ function initGame() {
         // Hoạt ảnh nhân vật
         animateBarista(elapsed);
         animateCustomer(dt, elapsed, onCustomerArrivedAtCounter, onCustomerLeftShop);
+        if (typeof animateSeatedCustomers === 'function') {
+            animateSeatedCustomers(dt, elapsed, scene);
+        }
 
         // Hoạt ảnh ly trà sữa dâng nước & đóng nắp
         updateCup3DAnimations(dt);

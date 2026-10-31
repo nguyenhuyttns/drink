@@ -779,3 +779,245 @@ function animateCustomer(dt, elapsed, onArrivedAtCounter, onLeftShop) {
         }
     }
 }
+
+/* ============================================================================
+ * 6. HỆ THỐNG KHÁCH NGỒI BÀN UỐNG TRÀ SỮA (SEATED CUSTOMERS ENGINE)
+ * ============================================================================ */
+
+// 4 vị trí ghế đẩu quanh 2 bàn tròn
+const SHOP_SEATS = [
+    { id: 0, pos: new THREE.Vector3(2.45, 0, 1.5), sitPos: new THREE.Vector3(2.45, 0.22, 1.5), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(3.15, 1.10, 1.5), occupied: false, seatedData: null },
+    { id: 1, pos: new THREE.Vector3(4.75, 0, 1.5), sitPos: new THREE.Vector3(4.75, 0.22, 1.5), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, 1.5), occupied: false, seatedData: null },
+    { id: 2, pos: new THREE.Vector3(2.45, 0, -1.8), sitPos: new THREE.Vector3(2.45, 0.22, -1.8), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(3.15, 1.10, -1.8), occupied: false, seatedData: null },
+    { id: 3, pos: new THREE.Vector3(4.75, 0, -1.8), sitPos: new THREE.Vector3(4.75, 0.22, -1.8), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, -1.8), occupied: false, seatedData: null }
+];
+
+let seatedCustomers = [];
+
+function getAvailableSeat() {
+    return SHOP_SEATS.find(s => !s.occupied) || null;
+}
+
+function createTableCup(teaColor) {
+    const cupGroup = new THREE.Group();
+
+    // Thân ly
+    const bodyGeo = new THREE.CylinderGeometry(0.12, 0.08, 0.30, 14);
+    const bodyMat = new THREE.MeshLambertMaterial({ color: teaColor });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 0.15;
+    body.castShadow = true;
+    cupGroup.add(body);
+
+    // Nắp dập phẳng
+    const lidGeo = new THREE.CylinderGeometry(0.125, 0.125, 0.03, 14);
+    const lidMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const lid = new THREE.Mesh(lidGeo, lidMat);
+    lid.position.y = 0.31;
+    cupGroup.add(lid);
+
+    // Ống hút cắm xiên
+    const strawGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.22, 8);
+    const strawMat = new THREE.MeshLambertMaterial({ color: 0xf472b6 });
+    const straw = new THREE.Mesh(strawGeo, strawMat);
+    straw.position.set(0.02, 0.38, 0.02);
+    straw.rotation.z = -0.22;
+    cupGroup.add(straw);
+
+    return cupGroup;
+}
+
+function startCustomerDineIn(order, targetScene) {
+    const seat = getAvailableSeat();
+    if (!seat) return false;
+
+    seat.occupied = true;
+
+    // Dựng mô hình 3D hoàn chỉnh cho nhân vật ngồi
+    const fig = createFullyArticulatedChibi(order.customer);
+    const group = fig.root;
+    group.position.set(-0.25, 0, 1.35);
+    group.rotation.y = 0;
+    targetScene.add(group);
+
+    // Ly trà mini trên tay
+    const miniCup = new THREE.Group();
+    const cBody = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.09, 0.065, 0.24, 14),
+        new THREE.MeshLambertMaterial({ color: TEA_MENU[order.teaId].color })
+    );
+    const cLid = new THREE.Mesh(new THREE.CylinderGeometry(0.098, 0.098, 0.03, 14), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+    cLid.position.y = 0.12;
+    const cStraw = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.18, 8), new THREE.MeshLambertMaterial({ color: 0xf472b6 }));
+    cStraw.position.y = 0.18;
+    miniCup.add(cBody, cLid, cStraw);
+    fig.rightArm.add(miniCup);
+    miniCup.position.set(0.05, -0.34, 0.12);
+    miniCup.rotation.x = 0.7;
+    fig.rightArm.rotation.x = -0.7;
+
+    const seatedObj = {
+        id: Date.now() + Math.random(),
+        order: order,
+        seat: seat,
+        group: group,
+        limbs: fig,
+        miniCup: miniCup,
+        tableCup: null,
+        state: 'WALKING_TO_SEAT',
+        targetPos: seat.pos.clone(),
+        walkCycle: 0,
+        sitTimer: 16.0, // Ngồi uống chill 16 giây
+        nextSpeechTime: 4.5,
+        finished: false
+    };
+
+    seat.seatedData = seatedObj;
+    seatedCustomers.push(seatedObj);
+    return true;
+}
+
+function animateSeatedCustomers(dt, elapsed, targetScene) {
+    if (!seatedCustomers || seatedCustomers.length === 0) return;
+
+    for (let i = 0; i < seatedCustomers.length; i++) {
+        const sc = seatedCustomers[i];
+        if (sc.finished) continue;
+
+        if (sc.state === 'WALKING_TO_SEAT') {
+            const currentPos = sc.group.position;
+            const dir = new THREE.Vector3().subVectors(sc.targetPos, currentPos);
+            const dist = dir.length();
+
+            if (dist > 0.08) {
+                dir.normalize();
+                currentPos.addScaledVector(dir, 3.2 * dt);
+                sc.group.rotation.y = Math.atan2(dir.x, dir.z);
+
+                sc.walkCycle += dt * 15;
+                const swing = Math.sin(sc.walkCycle);
+
+                if (sc.limbs.leftLeg && sc.limbs.rightLeg) {
+                    sc.limbs.leftLeg.rotation.x = swing * 0.55;
+                    sc.limbs.rightLeg.rotation.x = -swing * 0.55;
+                }
+                if (sc.limbs.leftArm) sc.limbs.leftArm.rotation.x = -swing * 0.45;
+                sc.group.position.y = Math.abs(Math.sin(sc.walkCycle)) * 0.08;
+            } else {
+                // Đến ghế: Ngồi xuống đệm ghế!
+                sc.state = 'SITTING';
+                sc.group.position.copy(sc.seat.sitPos);
+                sc.group.rotation.y = sc.seat.lookAngle;
+
+                // Ẩn ly trên tay
+                if (sc.miniCup) sc.miniCup.visible = false;
+
+                // Gập chân 90 độ ngồi đàng hoàng
+                if (sc.limbs.leftLeg && sc.limbs.rightLeg) {
+                    sc.limbs.leftLeg.rotation.x = -Math.PI / 2;
+                    sc.limbs.rightLeg.rotation.x = -Math.PI / 2;
+                }
+                // Tay đặt lên mép bàn
+                if (sc.limbs.leftArm) sc.limbs.leftArm.rotation.x = -0.65;
+                if (sc.limbs.rightArm) sc.limbs.rightArm.rotation.x = -0.65;
+
+                // Đặt ly trà sữa lên bàn
+                sc.tableCup = createTableCup(TEA_MENU[sc.order.teaId].color);
+                sc.tableCup.position.copy(sc.seat.cupPos);
+                targetScene.add(sc.tableCup);
+
+                showToast(`🪑 ${sc.order.customer.name} đã ngồi vào bàn thưởng thức trà sữa!`);
+            }
+        } else if (sc.state === 'SITTING') {
+            sc.sitTimer -= dt;
+            sc.nextSpeechTime -= dt;
+
+            // Nhịp thở & nghiêng đầu theo tiếng nhạc
+            if (sc.limbs.headGroup) {
+                sc.limbs.headGroup.rotation.z = Math.sin(elapsed * 1.6 + sc.id) * 0.05;
+                sc.limbs.headGroup.rotation.y = Math.sin(elapsed * 0.9 + sc.id) * 0.08;
+            }
+
+            // Đôi khi hiện lời khen ngợi dễ thương
+            if (sc.nextSpeechTime <= 0) {
+                sc.nextSpeechTime = 7.5;
+                const praises = [
+                    `🧋 ${sc.order.customer.name}: "Trà sữa ngon xỉu luôn!"`,
+                    `💖 ${sc.order.customer.name}: "Góc này ngồi chill thật sự~"`,
+                    `✨ ${sc.order.customer.name}: "Đúng hương vị mình thích!"`,
+                    `😋 ${sc.order.customer.name}: "Trân châu dai giòn đã quá!"`
+                ];
+                showToast(praises[Math.floor(Math.random() * praises.length)]);
+            }
+
+            // Hết giờ uống: đứng dậy để lại tiền tip và ra về
+            if (sc.sitTimer <= 0) {
+                if (sc.tableCup) {
+                    targetScene.remove(sc.tableCup);
+                    sc.tableCup = null;
+                }
+
+                const tip = 10000;
+                gameState.money += tip;
+                gameState.revenue += tip;
+                updateTopStatsUI();
+                playSoundEffect('cash');
+                showToast(`💵 ${sc.order.customer.name} uống xong để lại +${formatVND(tip)} tiền tip cho quán!`);
+
+                // Đứng dậy
+                sc.group.position.y = 0;
+                if (sc.limbs.leftLeg && sc.limbs.rightLeg) {
+                    sc.limbs.leftLeg.rotation.x = 0;
+                    sc.limbs.rightLeg.rotation.x = 0;
+                }
+                if (sc.limbs.leftArm) sc.limbs.leftArm.rotation.x = 0;
+                if (sc.limbs.rightArm) sc.limbs.rightArm.rotation.x = 0;
+
+                sc.state = 'WALKING_OUT';
+                sc.targetPos = new THREE.Vector3(-6.2, 0, 2.2);
+            }
+        } else if (sc.state === 'WALKING_OUT') {
+            const currentPos = sc.group.position;
+            const dir = new THREE.Vector3().subVectors(sc.targetPos, currentPos);
+            const dist = dir.length();
+
+            if (dist > 0.08) {
+                dir.normalize();
+                currentPos.addScaledVector(dir, 3.2 * dt);
+                sc.group.rotation.y = Math.atan2(dir.x, dir.z);
+
+                sc.walkCycle += dt * 15;
+                const swing = Math.sin(sc.walkCycle);
+
+                if (sc.limbs.leftLeg && sc.limbs.rightLeg) {
+                    sc.limbs.leftLeg.rotation.x = swing * 0.55;
+                    sc.limbs.rightLeg.rotation.x = -swing * 0.55;
+                }
+                if (sc.limbs.leftArm) sc.limbs.leftArm.rotation.x = -swing * 0.45;
+                if (sc.limbs.rightArm) sc.limbs.rightArm.rotation.x = swing * 0.45;
+                sc.group.position.y = Math.abs(Math.sin(sc.walkCycle)) * 0.08;
+            } else {
+                // Thoát khỏi quán
+                sc.seat.occupied = false;
+                sc.seat.seatedData = null;
+                targetScene.remove(sc.group);
+                sc.finished = true;
+            }
+        }
+    }
+
+    seatedCustomers = seatedCustomers.filter(sc => !sc.finished);
+}
+
+function clearAllSeatedCustomers(targetScene) {
+    if (!seatedCustomers) return;
+    seatedCustomers.forEach(sc => {
+        if (sc.tableCup && targetScene) targetScene.remove(sc.tableCup);
+        if (sc.group && targetScene) targetScene.remove(sc.group);
+    });
+    seatedCustomers = [];
+    SHOP_SEATS.forEach(s => {
+        s.occupied = false;
+        s.seatedData = null;
+    });
+}

@@ -38,7 +38,8 @@ function updateOrderTicketUI() {
         document.getElementById('customer-name').textContent = order.customer.name;
         const elDesc = document.getElementById('customer-desc');
         if (elDesc) {
-            elDesc.textContent = order.customer.ageText || 'Khách tại quầy #1';
+            const dineText = order.dineIn ? '🪑 Uống tại bàn' : '🥡 Mang về';
+            elDesc.textContent = `${order.customer.ageText || 'Khách tại quầy #1'} • ${dineText}`;
         }
         document.getElementById('order-tea-name').innerHTML = `
             <span>${tea.name}</span>
@@ -71,25 +72,51 @@ function updateOrderTicketUI() {
 }
 
 function updateCraftingUI() {
-    // 1. Highlight nút chọn cốt trà
+    const isOrdering = gameState.phase === 'ORDERING';
+    const targetTea = (isOrdering && gameState.currentOrder) ? gameState.currentOrder.teaId : null;
+    const targetTops = (isOrdering && gameState.currentOrder) ? gameState.currentOrder.toppings : [];
+
+    // 1. Highlight nút chọn cốt trà (Khoanh viền món khách gọi)
     Object.keys(TEA_MENU).forEach(tKey => {
         const btn = document.getElementById(`btn-tea-${tKey}`);
         if (!btn) return;
+
+        const oldTag = btn.querySelector('.order-hint-tag');
+        if (oldTag) oldTag.remove();
+
         if (gameState.cup.teaId === tKey) {
-            btn.className = 'tea-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-500 bg-pink-50 shadow-sm transition text-left';
+            // Đã chọn vào ly
+            btn.className = 'tea-btn relative flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-500 bg-pink-50 shadow-md ring-2 ring-pink-300 transition text-left';
+            btn.insertAdjacentHTML('beforeend', '<span class="order-hint-tag absolute -top-2 -right-1 text-[9px] font-extrabold bg-pink-500 text-white px-1.5 py-0.5 rounded-full shadow">Đã chọn ✓</span>');
+        } else if (targetTea === tKey) {
+            // MÓN KHÁCH GỌI (KHOANH VIỀN BORDER LINE GỢI Ý - KHÔNG TỰ CHỌN SẴN)
+            btn.className = 'tea-btn relative flex items-center gap-2 p-2 rounded-2xl item-ordered-hint transition text-left cursor-pointer';
+            btn.insertAdjacentHTML('beforeend', '<span class="order-hint-tag absolute -top-2 -right-1 text-[9px] font-extrabold bg-amber-500 text-white px-1.5 py-0.5 rounded-full shadow animate-pulse">Khách gọi 🎯</span>');
         } else {
-            btn.className = 'tea-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left';
+            // Món khác không gọi
+            btn.className = 'tea-btn relative flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left opacity-90';
         }
     });
 
-    // 2. Highlight nút chọn topping
+    // 2. Highlight nút chọn topping (Khoanh viền topping khách gọi)
     Object.keys(TOPPING_MENU).forEach(topKey => {
         const btn = document.getElementById(`btn-top-${topKey}`);
         if (!btn) return;
+
+        const oldTag = btn.querySelector('.order-hint-tag');
+        if (oldTag) oldTag.remove();
+
         if (gameState.cup.toppings.has(topKey)) {
-            btn.className = 'top-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-emerald-500 bg-emerald-50 shadow-sm transition text-left';
+            // Đã chọn vào ly
+            btn.className = 'top-btn relative flex items-center gap-2 p-2 rounded-2xl border-2 border-emerald-500 bg-emerald-50 shadow-md ring-2 ring-emerald-300 transition text-left';
+            btn.insertAdjacentHTML('beforeend', '<span class="order-hint-tag absolute -top-2 -right-1 text-[9px] font-extrabold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full shadow">Đã thêm ✓</span>');
+        } else if (targetTops.includes(topKey)) {
+            // TOPPING KHÁCH GỌI (KHOANH VIỀN BORDER LINE GỢI Ý - KHÔNG TỰ CHỌN SẴN)
+            btn.className = 'top-btn relative flex items-center gap-2 p-2 rounded-2xl item-ordered-hint transition text-left cursor-pointer';
+            btn.insertAdjacentHTML('beforeend', '<span class="order-hint-tag absolute -top-2 -right-1 text-[9px] font-extrabold bg-amber-500 text-white px-1.5 py-0.5 rounded-full shadow animate-pulse">Khách gọi 🎯</span>');
         } else {
-            btn.className = 'top-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left';
+            // Topping khác không gọi
+            btn.className = 'top-btn relative flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left opacity-90';
         }
     });
 

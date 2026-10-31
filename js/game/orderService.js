@@ -20,12 +20,14 @@ function generateRandomOrder() {
     });
 
     const profile = CUSTOMER_PROFILES[Math.floor(Math.random() * CUSTOMER_PROFILES.length)];
+    const dineIn = Math.random() < 0.70; // 70% chọn uống tại quán
 
     return {
         customer: profile,
         teaId: randomTeaKey,
         toppings: chosenToppings,
-        totalPrice: totalPrice
+        totalPrice: totalPrice,
+        dineIn: dineIn
     };
 }
 
@@ -57,6 +59,7 @@ function spawnNextCustomer() {
     // Dọn ly trên quầy cho khách mới
     clearCurrentCup(false);
     updateOrderTicketUI();
+    updateCraftingUI();
     hideSpeechBubble();
 }
 
@@ -68,6 +71,7 @@ function onCustomerArrivedAtCounter() {
     playSoundEffect('bell');
 
     updateOrderTicketUI();
+    updateCraftingUI(); // Gợi ý viền vàng món khách gọi
 
     const order = gameState.currentOrder;
     if (!order) return;
@@ -77,13 +81,14 @@ function onCustomerArrivedAtCounter() {
     if (order.toppings.length > 0) {
         topText = 'thêm ' + order.toppings.map(id => TOPPING_MENU[id].name).join(', ');
     }
+    const dineNotice = order.dineIn ? '(Mình ngồi bàn uống nha 🪑)' : '(Mang về giúp mình nha 🥡)';
 
     showSpeechBubble(
         `🎙️ ${order.customer.name}`,
-        `Cho mình 1 ${teaName}, ${topText} nhé!`,
+        `Cho mình 1 ${teaName}, ${topText} nhé! ${dineNotice}`,
         false
     );
-    showToast(`🛎️ ${order.customer.name} vừa gọi món! Hãy chọn cốt trà và topping ở bảng bên phải.`);
+    showToast(`🛎️ ${order.customer.name} vừa gọi món! Xem ô khoanh viền nổi bật ở bảng bên phải để pha nhanh nhé.`);
 }
 
 function validateDrinkAgainstOrder() {

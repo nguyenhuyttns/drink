@@ -97,23 +97,45 @@ function collectPayment() {
     updateTopStatsUI();
 
     showToast(`💸 Đã thu ${formatVND(order.totalPrice)} từ ${order.customer.name}! Cảm ơn quý khách!`);
-    showSpeechBubble('💖 Cảm ơn tiệm!', 'Trà sữa ngon lắm, lần sau mình lại ghé!', false);
-
-    // Đưa ly nước vào tay khách và dọn ly trên quầy
-    if (customerHandCup) {
-        const teaColor = TEA_MENU[order.teaId].color;
-        customerHandCup.material.color.setHex(teaColor);
-    }
-    if (customerGroup && customerGroup.userData.miniCupGroup) {
-        customerGroup.userData.miniCupGroup.visible = true;
-    }
     clearCurrentCup(false);
 
-    // Khách hàng cầm ly bước ra cửa
-    gameState.phase = 'WALKING_OUT';
-    customerAnim.targetPos.set(-6.2, 0, 2.2);
-    customerAnim.active = true;
-    updateOrderTicketUI();
+    // Kiểm tra xem khách có chọn ngồi bàn và tiệm còn ghế trống không
+    const canDineIn = order.dineIn && typeof getAvailableSeat === 'function' && getAvailableSeat();
+
+    if (canDineIn && typeof startCustomerDineIn === 'function') {
+        // KHÁCH UỐNG TẠI QUÁN: BƯỚC ĐẾN BÀN NGỒI
+        showSpeechBubble('💖 Cảm ơn tiệm!', 'Mình ra bàn ngồi thưởng thức nhé! 🪑', false);
+
+        if (customerGroup) customerGroup.visible = false;
+        startCustomerDineIn(order, scene);
+
+        // Quầy ngay lập tức sẵn sàng đón khách tiếp theo sau 1 giây!
+        gameState.phase = 'WAITING_SPAWN';
+        gameState.currentOrder = null;
+        updateOrderTicketUI();
+        updateCraftingUI();
+
+        setTimeout(() => {
+            spawnNextCustomer();
+        }, 1100);
+    } else {
+        // KHÁCH MANG VỀ
+        showSpeechBubble('💖 Cảm ơn tiệm!', 'Trà sữa thơm lắm, mình mang về nhé! 🥡', false);
+
+        if (customerHandCup) {
+            const teaColor = TEA_MENU[order.teaId].color;
+            customerHandCup.material.color.setHex(teaColor);
+        }
+        if (customerGroup && customerGroup.userData.miniCupGroup) {
+            customerGroup.userData.miniCupGroup.visible = true;
+        }
+
+        // Khách hàng cầm ly bước ra cửa
+        gameState.phase = 'WALKING_OUT';
+        customerAnim.targetPos.set(-6.2, 0, 2.2);
+        customerAnim.active = true;
+        updateOrderTicketUI();
+    }
 }
 
 function startNewDay() {
@@ -131,6 +153,10 @@ function confirmResetGame() {
     playSoundEffect('bell');
     closeResetModal();
     closeInvoiceModal();
+
+    if (typeof clearAllSeatedCustomers === 'function') {
+        clearAllSeatedCustomers(scene);
+    }
 
     gameState.money = 100000;
     gameState.revenue = 0;
