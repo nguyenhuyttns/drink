@@ -9,6 +9,8 @@ const gameState = {
     revenue: 0,
     ordersSold: 0,
     customersServed: 0,
+    totalStars: 0,
+    ratingCount: 0,
     day: 1,
     soundEnabled: true,
 

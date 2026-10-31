@@ -55,6 +55,11 @@ function initGame() {
             animateSeatedCustomers(dt, elapsed, scene);
         }
 
+        // Cập nhật thanh kiên nhẫn thời gian thực
+        if (typeof updatePatienceTimer === 'function') {
+            updatePatienceTimer(dt);
+        }
+
         // Hoạt ảnh ly trà sữa dâng nước & đóng nắp
         updateCup3DAnimations(dt);
 

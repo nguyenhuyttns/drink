@@ -73,6 +73,11 @@ function onCustomerArrivedAtCounter() {
     updateOrderTicketUI();
     updateCraftingUI(); // Gợi ý viền vàng món khách gọi
 
+    // Bắt đầu đếm ngược thanh kiên nhẫn 16 giây
+    if (typeof startPatienceTimer === 'function') {
+        startPatienceTimer(16);
+    }
+
     const order = gameState.currentOrder;
     if (!order) return;
 
@@ -115,7 +120,12 @@ function validateDrinkAgainstOrder() {
     }
 
     if (errors.length > 0) {
-        // PHA SAI MÓN -> Khách lắc đầu thất vọng, yêu cầu làm lại
+        // PHA SAI MÓN -> Trừ 3.5s kiên nhẫn, khách lắc đầu thất vọng
+        if (typeof patienceState !== 'undefined' && patienceState.active) {
+            patienceState.timeLeft = Math.max(1, patienceState.timeLeft - 3.5);
+            if (typeof updatePatienceUI === 'function') updatePatienceUI();
+        }
+
         playSoundEffect('error');
         customerAnim.shakeTimer = 0.85;
         gameState.phase = 'ORDERING';
@@ -128,9 +138,28 @@ function validateDrinkAgainstOrder() {
             clearCurrentCup(false);
         }, 900);
     } else {
-        // PHA ĐÚNG MÓN -> Mở modal hóa đơn thu tiền
+        // PHA ĐÚNG MÓN -> Dừng đồng hồ & tính thưởng tốc độ
+        const rating = typeof stopPatienceTimer === 'function' ? stopPatienceTimer() : { stars: 3, speedBonus: 0, timeSpent: 5 };
+        order.stars = rating.stars;
+        order.speedBonus = rating.speedBonus;
+        order.totalPrice += rating.speedBonus;
+
+        gameState.totalStars = (gameState.totalStars || 0) + rating.stars;
+        gameState.ratingCount = (gameState.ratingCount || 0) + 1;
+        updateTopStatsUI();
+
         gameState.phase = 'AWAITING_PAYMENT';
-        showSpeechBubble('😍 Đúng món rồi!', 'Thơm quá! Mình gửi tiền thanh toán nhé!', false);
+        if (rating.stars === 3) {
+            playSoundEffect('bell');
+            showSpeechBubble('😍 Xuất sắc!', `Pha siêu tốc chỉ ${rating.timeSpent.toFixed(1)}s! Mình thưởng nóng thêm ${formatVND(rating.speedBonus)} nhé!`, false);
+            showToast(`⭐⭐⭐ Đỉnh cao! Pha siêu tốc đạt 3 Sao! Thưởng tốc độ +${formatVND(rating.speedBonus)}!`);
+        } else if (rating.stars === 2) {
+            showSpeechBubble('😍 Hài lòng!', `Trà sữa ngon đúng điệu! Mình gửi thêm ${formatVND(rating.speedBonus)} tiền thưởng nhé!`, false);
+            showToast(`⭐⭐ Hài lòng! Đạt 2 Sao! Thưởng tốc độ +${formatVND(rating.speedBonus)}!`);
+        } else {
+            showSpeechBubble('🙂 Đã có nước!', 'Đợi hơi lâu một chút nhưng vị vẫn rất thơm ngon!', false);
+            showToast(`⭐ Hoàn thành! Khách chấm 1 Sao vì phải đợi hơi lâu.`);
+        }
         openInvoiceModal();
     }
 }

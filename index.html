@@ -21,9 +21,20 @@
 
     <!-- Floating 3D Speech Bubble attached to Customer -->
     <div id="customer-bubble" class="hidden z-20 floating-bubble">
-        <div class="bg-white border-3 border-pink-300 rounded-2xl px-4 py-2.5 shadow-lg text-center max-w-[230px] relative bubble-tail" style="border-width: 3px;">
+        <div class="bg-white border-3 border-pink-300 rounded-2xl px-4 py-2.5 shadow-lg text-center max-w-[240px] relative bubble-tail" style="border-width: 3px;">
             <div id="bubble-status" class="text-xs font-bold text-pink-500 uppercase tracking-wider mb-0.5">Khách gọi món</div>
             <div id="bubble-text" class="text-sm font-bold text-gray-800 leading-snug">Cho mình 1 Trà sữa truyền thống nha!</div>
+
+            <!-- Real-time Patience Bar -->
+            <div id="patience-container" class="mt-2 pt-2 border-t border-pink-100 flex flex-col items-center">
+                <div class="flex justify-between w-full text-[10px] font-bold text-gray-500 mb-1">
+                    <span id="patience-label">💖 Kiên nhẫn (Háo hức)</span>
+                    <span id="patience-stars" class="text-amber-500 font-extrabold">⭐⭐⭐ (+15k)</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden shadow-inner">
+                    <div id="patience-bar" class="h-full bg-emerald-500 rounded-full transition-all duration-150" style="width: 100%;"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -84,6 +95,14 @@
                     <div>
                         <div class="text-[11px] font-bold text-gray-400 uppercase">Khách phục vụ</div>
                         <div id="stat-customers" class="text-sm sm:text-base font-extrabold text-purple-600">0</div>
+                    </div>
+                </div>
+                <div class="h-7 w-[2px] bg-pink-100 hidden sm:block"></div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">⭐</span>
+                    <div>
+                        <div class="text-[11px] font-bold text-gray-400 uppercase">Đánh giá tiệm</div>
+                        <div id="stat-rating" class="text-sm sm:text-base font-extrabold text-amber-500">5.0 ⭐</div>
                     </div>
                 </div>
             </div>
@@ -317,6 +336,13 @@
                         <!-- Dynamic -->
                     </div>
                 </div>
+
+                <!-- Dòng thưởng tốc độ & số sao -->
+                <div id="bill-speed-bonus-row" class="hidden flex justify-between items-center text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-200">
+                    <span id="bill-stars-text">⭐⭐⭐ Thưởng Tốc Độ:</span>
+                    <span id="bill-bonus-price" class="text-emerald-600 font-extrabold">+15.000đ</span>
+                </div>
+
                 <div class="border-t-2 border-pink-200 pt-2.5 flex justify-between items-center text-base">
                     <span class="font-extrabold text-gray-700">TỔNG CỘNG:</span>
                     <span id="bill-total" class="font-extrabold text-emerald-600 text-lg">35.000đ</span>
@@ -401,6 +427,7 @@
 
     <!-- 6. Game Logic & Services -->
     <script src="js/game/cameraController.js"></script>
+    <script src="js/game/patienceService.js"></script>
     <script src="js/game/orderService.js"></script>
     <script src="js/game/craftingService.js"></script>
     <script src="js/game/shopService.js"></script>

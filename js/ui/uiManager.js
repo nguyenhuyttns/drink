@@ -15,6 +15,14 @@ function updateTopStatsUI() {
     if (elOrders) elOrders.textContent = gameState.ordersSold;
     if (elCust) elCust.textContent = gameState.customersServed;
     if (elDay) elDay.textContent = `Ngày ${gameState.day}`;
+
+    const elRating = document.getElementById('stat-rating');
+    if (elRating) {
+        const avg = (gameState.ratingCount && gameState.ratingCount > 0)
+            ? (gameState.totalStars / gameState.ratingCount).toFixed(1)
+            : '5.0';
+        elRating.textContent = `${avg} ⭐`;
+    }
 }
 
 function updateOrderTicketUI() {
@@ -226,6 +234,18 @@ function openInvoiceModal() {
             row.innerHTML = `<span>+ ${top.name}</span><span>${formatVND(top.price)}</span>`;
             billTopsContainer.appendChild(row);
         });
+    }
+
+    // Hiển thị dòng thưởng tốc độ & số sao đạt được
+    const bonusRow = document.getElementById('bill-speed-bonus-row');
+    const starsText = document.getElementById('bill-stars-text');
+    const bonusPrice = document.getElementById('bill-bonus-price');
+    if (order.speedBonus && order.speedBonus > 0) {
+        if (bonusRow) bonusRow.classList.remove('hidden');
+        if (starsText) starsText.textContent = `${'⭐'.repeat(order.stars || 3)} Thưởng Tốc Độ:`;
+        if (bonusPrice) bonusPrice.textContent = `+${formatVND(order.speedBonus)}`;
+    } else {
+        if (bonusRow) bonusRow.classList.add('hidden');
     }
 
     document.getElementById('bill-total').textContent = formatVND(order.totalPrice);
