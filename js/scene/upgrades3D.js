@@ -188,3 +188,17 @@ function resetAllUpgrades3D(targetScene) {
         sealingPressHeadMesh.material.color.setHex(0xd1d5db); // Trở về màu xám kim loại ban đầu
     }
 }
+
+/**
+ * Áp dụng lại tất cả vật phẩm đã mua vào 3D Scene khi tải game
+ */
+function applyPurchasedDecorUpgrades(targetScene) {
+    if (!targetScene || !gameState || !gameState.upgrades) return;
+    Object.keys(gameState.upgrades).forEach(id => {
+        if (gameState.upgrades[id]) {
+            applyUpgrade3D(id, targetScene);
+        }
+    });
+}
+
+

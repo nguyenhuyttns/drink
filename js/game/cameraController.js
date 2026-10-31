@@ -32,13 +32,26 @@ function resetCameraView() {
     };
 }
 
-function setupPointerInteraction(targetRenderer, targetCamera, counterHitboxMesh) {
+function setupPointerInteraction(targetRenderer, targetCamera, counterHitboxMesh, petCatHitboxMesh) {
     targetRenderer.domElement.addEventListener('pointerdown', (event) => {
         const rect = targetRenderer.domElement.getBoundingClientRect();
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
         raycaster.setFromCamera(mouse, targetCamera);
+
+        // 1. Ưu tiên kiểm tra tương tác vuốt ve bé Mèo Mimi
+        if (petCatHitboxMesh) {
+            const catIntersects = raycaster.intersectObject(petCatHitboxMesh, true);
+            if (catIntersects.length > 0) {
+                if (typeof interactWithPetCat === 'function') {
+                    interactWithPetCat();
+                }
+                return;
+            }
+        }
+
+        // 2. Tương tác nhấn vào Quầy Pha Chế
         if (counterHitboxMesh) {
             const intersects = raycaster.intersectObject(counterHitboxMesh, true);
             if (intersects.length > 0) {

@@ -147,6 +147,29 @@ function playSoundEffect(type) {
             });
             break;
         }
+
+        case 'meow': {
+            // Tiếng mèo con kêu Meow~ ngọt ngào đáng yêu
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+
+            // Đường cong tần số meow: 520Hz -> 840Hz -> 580Hz
+            osc.frequency.setValueAtTime(520, now);
+            osc.frequency.exponentialRampToValueAtTime(840, now + 0.14);
+            osc.frequency.exponentialRampToValueAtTime(580, now + 0.36);
+
+            // Envelope âm lượng
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.24, now + 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.38);
+            break;
+        }
     }
 }
 
