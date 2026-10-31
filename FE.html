@@ -90,6 +90,9 @@
 
             <!-- Management Action Buttons -->
             <div class="flex items-center gap-2 interactive">
+                <button onclick="openShopModal()" class="pastel-panel hover:bg-pink-50 text-pink-600 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-1.5 shadow-sm" title="Mở cửa hàng trang trí & nâng cấp">
+                    🛍️ Nâng Cấp Quán
+                </button>
                 <button id="btn-sound" onclick="toggleSound()" class="pastel-panel hover:bg-pink-50 text-pink-600 font-bold p-2.5 rounded-xl transition" title="Bật/Tắt âm thanh">
                     🔊
                 </button>
@@ -345,10 +348,39 @@
         </div>
     </div>
 
+    <!-- MODAL: SHOP UPGRADES & INTERIOR -->
+    <div id="shop-modal" class="hidden fixed inset-0 z-30 flex items-center justify-center bg-black/35 backdrop-blur-sm p-4">
+        <div class="pastel-panel interactive rounded-3xl p-5 sm:p-6 w-full max-w-2xl max-h-[90vh] flex flex-col animate-pop shadow-2xl">
+            <div class="flex items-center justify-between border-b-2 border-pink-100 pb-3 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-3xl">🛍️</span>
+                    <div>
+                        <h3 class="font-title text-xl text-pink-600 leading-none">Cửa Hàng Nâng Cấp & Nội Thất</h3>
+                        <span class="text-xs text-gray-400 font-semibold">Trang hoàng tiệm trà sữa & tăng lợi nhuận</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-gray-500">Ví tiền:</span>
+                        <span id="shop-current-money" class="text-sm font-extrabold text-emerald-600">100.000đ</span>
+                    </div>
+                    <button onclick="closeShopModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-rose-100 text-gray-500 hover:text-rose-600 font-bold flex items-center justify-center transition">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            <div id="shop-items-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 overflow-y-auto pr-1">
+                <!-- Rendered dynamically -->
+            </div>
+        </div>
+    </div>
+
     <!-- MODULAR JAVASCRIPT ARCHITECTURE -->
     <!-- 1. Config & Settings -->
     <script src="js/config/menu.js"></script>
     <script src="js/config/customers.js"></script>
+    <script src="js/config/upgrades.js"></script>
 
     <!-- 2. State & Utils -->
     <script src="js/state/gameState.js"></script>
@@ -362,6 +394,7 @@
     <script src="js/scene/equipment.js"></script>
     <script src="js/scene/cup3D.js"></script>
     <script src="js/scene/characters.js"></script>
+    <script src="js/scene/upgrades3D.js"></script>
 
     <!-- 5. UI Manager -->
     <script src="js/ui/uiManager.js"></script>
@@ -370,6 +403,7 @@
     <script src="js/game/cameraController.js"></script>
     <script src="js/game/orderService.js"></script>
     <script src="js/game/craftingService.js"></script>
+    <script src="js/game/shopService.js"></script>
 
     <!-- 7. Main Entry Point -->
     <script src="js/main.js"></script>

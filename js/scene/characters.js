@@ -957,12 +957,15 @@ function animateSeatedCustomers(dt, elapsed, targetScene) {
                     sc.tableCup = null;
                 }
 
-                const tip = 10000;
+                // Tiền tip: cơ bản 10.000đ, thêm +5.000đ nếu đã nâng cấp Máy Hát Đĩa
+                const bonusTip = (typeof gameState !== 'undefined' && gameState.upgrades && gameState.upgrades.music_box) ? 5000 : 0;
+                const tip = 10000 + bonusTip;
                 gameState.money += tip;
                 gameState.revenue += tip;
                 updateTopStatsUI();
                 playSoundEffect('cash');
-                showToast(`💵 ${sc.order.customer.name} uống xong để lại +${formatVND(tip)} tiền tip cho quán!`);
+                const bonusNote = bonusTip > 0 ? ' (kèm +5.000đ thưởng Máy Hát Đĩa)' : '';
+                showToast(`💵 ${sc.order.customer.name} uống xong để lại +${formatVND(tip)} tiền tip cho quán!${bonusNote}`);
 
                 // Đứng dậy
                 sc.group.position.y = 0;

@@ -18,6 +18,7 @@ function selectBaseTea(teaId) {
 
     playSoundEffect('pour');
     updateCraftingUI();
+    checkAutoSealerTrigger();
 }
 
 function toggleTopping(topId) {
@@ -37,6 +38,7 @@ function toggleTopping(topId) {
 
     syncCup3DToppings(gameState.cup.toppings);
     updateCraftingUI();
+    checkAutoSealerTrigger();
 }
 
 function clearCurrentCup(withSound = true) {
@@ -157,6 +159,16 @@ function confirmResetGame() {
     if (typeof clearAllSeatedCustomers === 'function') {
         clearAllSeatedCustomers(scene);
     }
+    if (typeof resetAllUpgrades3D === 'function') {
+        resetAllUpgrades3D(scene);
+    }
+
+    gameState.upgrades = {
+        neon_sign: false,
+        music_box: false,
+        cozy_carpet: false,
+        auto_sealer: false
+    };
 
     gameState.money = 100000;
     gameState.revenue = 0;
@@ -174,9 +186,29 @@ function confirmResetGame() {
     clearCurrentCup(false);
     updateTopStatsUI();
     updateOrderTicketUI();
+    if (typeof renderShopItems === 'function') {
+        renderShopItems();
+    }
 
     showToast('🔄 Đã đặt lại game về trạng thái ban đầu với 100.000đ vốn!');
     setTimeout(() => {
         spawnNextCustomer();
     }, 600);
+}
+
+function checkAutoSealerTrigger() {
+    if (!gameState.upgrades || !gameState.upgrades.auto_sealer) return;
+    if (gameState.phase !== 'ORDERING' || !gameState.currentOrder || gameState.cup.isSealed) return;
+
+    const order = gameState.currentOrder;
+    if (gameState.cup.teaId === order.teaId && 
+        order.toppings.length === gameState.cup.toppings.size &&
+        order.toppings.every(t => gameState.cup.toppings.has(t))) {
+        setTimeout(() => {
+            if (gameState.phase === 'ORDERING' && !gameState.cup.isSealed) {
+                showToast('⚡ Máy dập nắp mạ vàng tự động dập nắp ly trà sữa!');
+                finishAndServeDrink();
+            }
+        }, 220);
+    }
 }

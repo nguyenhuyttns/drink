@@ -22,6 +22,14 @@ const gameState = {
         teaId: null,
         toppings: new Set(),
         isSealed: false
+    },
+
+    // Các vật phẩm nâng cấp đã sở hữu
+    upgrades: {
+        neon_sign: false,   // Biển Neon phát sáng lung linh
+        music_box: false,   // Máy phát nhạc cổ điển (Tăng thêm 20% tiền tip)
+        cozy_carpet: false, // Thảm hoa nhung trước quầy
+        auto_sealer: false  // Máy dập nắp mạ vàng tự động
     }
 };
 

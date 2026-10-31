@@ -249,3 +249,80 @@ function closeResetModal() {
     const modal = document.getElementById('reset-modal');
     if (modal) modal.classList.add('hidden');
 }
+
+/* ============================================================================
+ * QUẢN LÝ CỬA HÀNG NÂNG CẤP & NỘI THẤT (SHOP MODAL UI)
+ * ============================================================================ */
+
+function renderShopItems() {
+    const list = document.getElementById('shop-items-list');
+    const elCurrent = document.getElementById('shop-current-money');
+    if (elCurrent) elCurrent.textContent = formatVND(gameState.money);
+    if (!list || typeof SHOP_UPGRADES === 'undefined') return;
+
+    list.innerHTML = '';
+    SHOP_UPGRADES.forEach(item => {
+        const isOwned = gameState.upgrades[item.id];
+        const canAfford = gameState.money >= item.price;
+
+        const card = document.createElement('div');
+        card.className = `p-3.5 rounded-2xl border-2 flex flex-col justify-between transition ${
+            isOwned 
+                ? 'border-emerald-300 bg-emerald-50/60' 
+                : 'border-pink-100 bg-white hover:border-pink-300'
+        }`;
+
+        let actionBtnHtml = '';
+        if (isOwned) {
+            actionBtnHtml = `
+                <button disabled class="w-full bg-emerald-100 text-emerald-700 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1 cursor-default">
+                    ✓ Đã sở hữu
+                </button>
+            `;
+        } else {
+            actionBtnHtml = `
+                <button onclick="buyUpgrade('${item.id}')" class="w-full ${
+                    canAfford 
+                        ? 'bg-pink-500 hover:bg-pink-600 text-white shadow-sm' 
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                } font-bold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1">
+                    🛒 Mua (${formatVND(item.price)})
+                </button>
+            `;
+        }
+
+        card.innerHTML = `
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-2xl">${item.icon}</span>
+                    <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                        isOwned ? 'bg-emerald-200 text-emerald-800' : 'bg-pink-100 text-pink-600'
+                    }">
+                        ${item.category}
+                    </span>
+                </div>
+                <h4 class="font-bold text-gray-800 text-sm mb-1">${item.name}</h4>
+                <p class="text-xs text-gray-500 leading-snug mb-2">${item.desc}</p>
+                <div class="text-[11px] font-bold text-pink-600 mb-3">${item.benefit}</div>
+            </div>
+            ${actionBtnHtml}
+        `;
+        list.appendChild(card);
+    });
+}
+
+function openShopModal() {
+    playSoundEffect('click');
+    const modal = document.getElementById('shop-modal');
+    if (modal) {
+        renderShopItems();
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeShopModal() {
+    playSoundEffect('click');
+    const modal = document.getElementById('shop-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
