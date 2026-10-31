@@ -784,24 +784,35 @@ function animateCustomer(dt, elapsed, onArrivedAtCounter, onLeftShop) {
  * 6. HỆ THỐNG KHÁCH NGỒI BÀN UỐNG TRÀ SỮA (SEATED CUSTOMERS ENGINE)
  * ============================================================================ */
 
-// 8 vị trí ghế đẩu quanh 4 bàn tròn (4 ghế ban đầu + 4 ghế khi mở rộng bàn ghế)
+// 12 vị trí ghế đẩu quanh 6 bàn tròn (4 ghế ban đầu + 4 ghế Cấp 1 + 4 ghế Cấp 2)
 const SHOP_SEATS = [
     { id: 0, pos: new THREE.Vector3(2.45, 0, 1.5), sitPos: new THREE.Vector3(2.45, 0.22, 1.5), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(3.15, 1.10, 1.5), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
     { id: 1, pos: new THREE.Vector3(4.75, 0, 1.5), sitPos: new THREE.Vector3(4.75, 0.22, 1.5), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, 1.5), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
     { id: 2, pos: new THREE.Vector3(2.45, 0, -1.8), sitPos: new THREE.Vector3(2.45, 0.22, -1.8), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(3.15, 1.10, -1.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
     { id: 3, pos: new THREE.Vector3(4.75, 0, -1.8), sitPos: new THREE.Vector3(4.75, 0.22, -1.8), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, -1.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
-    // 4 ghế bổ sung tại Bàn #3 (Z = 3.8) và Bàn #4 (Z = -3.8)
+    // 4 ghế bổ sung Cấp 1 tại Bàn #3 (Z = 3.8) và Bàn #4 (Z = -3.8)
     { id: 4, pos: new THREE.Vector3(2.45, 0, 3.8), sitPos: new THREE.Vector3(2.45, 0.22, 3.8), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(3.15, 1.10, 3.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
     { id: 5, pos: new THREE.Vector3(4.75, 0, 3.8), sitPos: new THREE.Vector3(4.75, 0.22, 3.8), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, 3.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
     { id: 6, pos: new THREE.Vector3(2.45, 0, -3.8), sitPos: new THREE.Vector3(2.45, 0.22, -3.8), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(3.15, 1.10, -3.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
-    { id: 7, pos: new THREE.Vector3(4.75, 0, -3.8), sitPos: new THREE.Vector3(4.75, 0.22, -3.8), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, -3.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null }
+    { id: 7, pos: new THREE.Vector3(4.75, 0, -3.8), sitPos: new THREE.Vector3(4.75, 0.22, -3.8), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, -3.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
+    // 4 ghế bổ sung Cấp 2 tại Bàn #5 (X = 1.0, Z = 3.8) và Bàn #6 (X = 1.0, Z = -3.8)
+    { id: 8, pos: new THREE.Vector3(0.35, 0, 3.8), sitPos: new THREE.Vector3(0.35, 0.22, 3.8), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(0.95, 1.10, 3.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
+    { id: 9, pos: new THREE.Vector3(1.65, 0, 3.8), sitPos: new THREE.Vector3(1.65, 0.22, 3.8), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(1.05, 1.10, 3.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
+    { id: 10, pos: new THREE.Vector3(0.35, 0, -3.8), sitPos: new THREE.Vector3(0.35, 0.22, -3.8), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(0.95, 1.10, -3.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
+    { id: 11, pos: new THREE.Vector3(1.65, 0, -3.8), sitPos: new THREE.Vector3(1.65, 0.22, -3.8), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(1.05, 1.10, -3.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null }
 ];
 
 let seatedCustomers = [];
 let dirtyTableHitboxes = [];
 
 function getAvailableSeat() {
-    const maxSeats = (typeof gameState !== 'undefined' && gameState.upgrades && gameState.upgrades.extra_tables) ? 8 : 4;
+    let maxSeats = 4;
+    const tableLevel = (typeof gameState !== 'undefined' && gameState.upgradeLevels && gameState.upgradeLevels.extra_tables) 
+        ? gameState.upgradeLevels.extra_tables 
+        : (gameState && gameState.upgrades && gameState.upgrades.extra_tables ? 1 : 0);
+    if (tableLevel >= 2) maxSeats = 12;
+    else if (tableLevel >= 1) maxSeats = 8;
+
     return SHOP_SEATS.slice(0, maxSeats).find(s => !s.occupied && !s.isDirty) || null;
 }
 

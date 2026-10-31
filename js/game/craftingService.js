@@ -109,6 +109,21 @@ function finishAndServeDrink() {
         showToast('⏳ Hiện chưa có khách gọi món tại quầy!');
         return;
     }
+
+    const order = gameState.currentOrder;
+
+    // Đơn chỉ mua bánh ngọt tại Quầy Bánh
+    if (!order.teaId && order.pastryId) {
+        if (!gameState.cup.pastryId) {
+            playSoundEffect('error');
+            showToast('⚠️ Bạn chưa chuẩn bị bánh ngọt lên đĩa cho khách!');
+            return;
+        }
+        playSoundEffect('bell');
+        validateDrinkAgainstOrder();
+        return;
+    }
+
     if (!gameState.cup.teaId) {
         playSoundEffect('error');
         showToast('⚠️ Bạn chưa chọn cốt trà sữa cho ly nước!');
@@ -123,6 +138,10 @@ function finishAndServeDrink() {
         consumeCupPackaging();
     }
 
+    // Tốc độ dập nắp cốc dựa vào cấp máy dập
+    const sealerLvl = (gameState.upgradeLevels && gameState.upgradeLevels.auto_sealer) || (gameState.upgrades.auto_sealer ? 1 : 0);
+    const sealDelay = sealerLvl >= 2 ? 150 : (sealerLvl >= 1 ? 250 : 450);
+
     // Hoạt ảnh dập nắp ly
     gameState.phase = 'SEALING';
     gameState.cup.isSealed = true;
@@ -134,10 +153,10 @@ function finishAndServeDrink() {
     playSoundEffect('seal');
     updateCraftingUI();
 
-    // Kiểm tra đơn sau khi nắp hạ xuống (450ms)
+    // Kiểm tra đơn sau khi nắp hạ xuống
     setTimeout(() => {
         validateDrinkAgainstOrder();
-    }, 450);
+    }, sealDelay);
 }
 
 function collectPayment() {
@@ -198,7 +217,9 @@ function collectPayment() {
 }
 
 function triggerStartDayProcess() {
-    if (typeof openDailyMenuModal === 'function') {
+    if (typeof openStartDayModal === 'function') {
+        openStartDayModal();
+    } else if (typeof openDailyMenuModal === 'function') {
         openDailyMenuModal();
     } else {
         commitStartNewDay();

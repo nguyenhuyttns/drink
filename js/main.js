@@ -69,9 +69,11 @@ function initGame() {
         gameState.currentOrder = null;
         updateOrderTicketUI();
 
-        // Khách tiếp theo xuất hiện sau 0.9s
+        // Khách tiếp theo xuất hiện sau 0.9s nếu quán đang mở và chưa đạt target kết thúc ngày
         setTimeout(() => {
-            spawnNextCustomer();
+            if (gameState.dailyTarget && gameState.dailyTarget.isDayOpen && !gameState.dailyTarget.isReached) {
+                spawnNextCustomer();
+            }
         }, 900);
     }
 
@@ -129,10 +131,17 @@ function initGame() {
 
     animate();
 
-    // Sinh khách hàng đầu tiên sau 1 giây
+    // Cập nhật thanh tiến độ mục tiêu
+    if (typeof updateTargetProgressUI === 'function') {
+        updateTargetProgressUI();
+    }
+
+    // Bắt đầu ngày mới: Mở bảng chọn Mục tiêu & Chuẩn bị nguyên liệu/Menu mở bán
     setTimeout(() => {
-        spawnNextCustomer();
-    }, 1000);
+        if (typeof openStartDayModal === 'function') {
+            openStartDayModal();
+        }
+    }, 700);
 }
 
 // Khởi chạy khi tài liệu HTML đã tải xong

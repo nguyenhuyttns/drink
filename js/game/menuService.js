@@ -40,7 +40,7 @@ function getActiveTeaIds() {
             active.push(teaId);
         }
     });
-    return active.length > 0 ? active : ['classic'];
+    return active;
 }
 
 /**
@@ -60,18 +60,44 @@ function getActiveToppingIds() {
 
 /**
  * Lấy danh sách ID các loại Bánh Ngọt đang được mở bán trong ngày
+ * BẮT BUỘC: Phải sở hữu Quầy Bánh Ngọt (bakery_counter) thì mới được bán bánh!
  * @returns {string[]}
  */
 function getActivePastryIds() {
+    // Chưa mua Quầy Bánh Ngọt -> Tuyệt đối không bán bánh!
+    if (!gameState.upgrades || !gameState.upgrades.bakery_counter) {
+        return [];
+    }
     const active = [];
     if (typeof PASTRY_MENU === 'undefined') return [];
     const cfg = gameState.menuConfig && gameState.menuConfig.pastries ? gameState.menuConfig.pastries : {};
     Object.keys(PASTRY_MENU).forEach(pastryId => {
-        if (!cfg[pastryId] || cfg[pastryId].enabled) {
+        if (cfg[pastryId] && cfg[pastryId].enabled) {
             active.push(pastryId);
         }
     });
     return active;
+}
+
+/**
+ * Kiểm tra xem một món có đang được bật bán hay không
+ * @param {'teas' | 'toppings' | 'pastries'} category 
+ * @param {string} itemId 
+ * @returns {boolean}
+ */
+function isItemActive(category, itemId) {
+    if (category === 'pastries') {
+        if (!gameState.upgrades || !gameState.upgrades.bakery_counter) {
+            return false;
+        }
+        if (gameState.menuConfig && gameState.menuConfig.pastries && gameState.menuConfig.pastries[itemId] !== undefined) {
+            return Boolean(gameState.menuConfig.pastries[itemId].enabled);
+        }
+        return false;
+    }
+    if (!gameState.menuConfig || !gameState.menuConfig[category]) return true;
+    if (gameState.menuConfig[category][itemId] === undefined) return true;
+    return Boolean(gameState.menuConfig[category][itemId].enabled);
 }
 
 /**
@@ -110,20 +136,20 @@ function toggleMenuItemState(category, itemId) {
         gameState.menuConfig[category] = {};
     }
     if (!gameState.menuConfig[category][itemId]) {
-        gameState.menuConfig[category][itemId] = { enabled: true };
+        const defaultPrice = (category === 'teas') ? TEA_MENU[itemId].price : (category === 'pastries' ? PASTRY_MENU[itemId].price : TOPPING_MENU[itemId].price);
+        gameState.menuConfig[category][itemId] = { enabled: false, price: defaultPrice };
     }
 
-    // Đảm bảo còn ít nhất 1 loại trà mở bán
-    if (category === 'teas') {
-        const activeCount = getActiveTeaIds().length;
-        if (gameState.menuConfig.teas[itemId].enabled && activeCount <= 1) {
+    // Nếu là bánh mà chưa có quầy bánh -> Khóa
+    if (category === 'pastries') {
+        if (!gameState.upgrades || !gameState.upgrades.bakery_counter) {
             playSoundEffect('error');
-            showToast('⚠️ Quán phải duy trì ít nhất 1 loại trà mở bán!');
-            return;
+            showToast('🔒 Bạn chưa mở khóa Quầy Bánh Ngọt! Hãy mua quầy bánh tại Cửa Hàng trước.');
+            return false;
         }
     }
 
-    const current = gameState.menuConfig[category][itemId].enabled;
+    const current = isItemActive(category, itemId);
     gameState.menuConfig[category][itemId].enabled = !current;
     playSoundEffect('click');
 
@@ -136,7 +162,72 @@ function toggleMenuItemState(category, itemId) {
     if (typeof renderMenuSettingsModal === 'function') {
         renderMenuSettingsModal();
     }
+    if (typeof renderDailyMenuModal === 'function') {
+        renderDailyMenuModal();
+    }
+    if (typeof updateCraftingUI === 'function') {
+        updateCraftingUI();
+    }
+    return true;
 }
+
+/**
+ * Chọn tất cả hoặc bỏ chọn tất cả món trong nhóm
+ * @param {'teas' | 'toppings' | 'pastries'} category 
+ * @param {boolean} enableAll 
+ */
+function setCategoryItemsState(category, enableAll) {
+    if (category === 'pastries' && enableAll && (!gameState.upgrades || !gameState.upgrades.bakery_counter)) {
+        playSoundEffect('error');
+        showToast('🔒 Bạn chưa mở khóa Quầy Bánh Ngọt! Cần mua quầy bánh tại Cửa Hàng trước.');
+        return false;
+    }
+
+    if (!gameState.menuConfig[category]) {
+        gameState.menuConfig[category] = {};
+    }
+
+    const sourceObj = (category === 'teas') 
+        ? TEA_MENU 
+        : (category === 'toppings' ? TOPPING_MENU : (typeof PASTRY_MENU !== 'undefined' ? PASTRY_MENU : {}));
+
+    Object.keys(sourceObj).forEach(itemId => {
+        if (!gameState.menuConfig[category][itemId]) {
+            const defPrice = sourceObj[itemId].price || 0;
+            gameState.menuConfig[category][itemId] = { enabled: enableAll, price: defPrice };
+        } else {
+            gameState.menuConfig[category][itemId].enabled = enableAll;
+        }
+    });
+
+    playSoundEffect('click');
+    const actionTxt = enableAll ? 'Đã CHỌN TẤT CẢ' : 'Đã BỎ CHỌN TẤT CẢ';
+    showToast(`📋 ${actionTxt} các món trong nhóm!`);
+
+    if (typeof renderMenuSettingsModal === 'function') {
+        renderMenuSettingsModal();
+    }
+    if (typeof renderDailyMenuModal === 'function') {
+        renderDailyMenuModal();
+    }
+    if (typeof updateCraftingUI === 'function') {
+        updateCraftingUI();
+    }
+    return true;
+}
+
+// Global window mappings
+function toggleActiveItem(category, itemId) {
+    return toggleMenuItemState(category, itemId);
+}
+window.toggleActiveItem = toggleActiveItem;
+window.toggleMenuItemState = toggleMenuItemState;
+window.setCategoryItemsState = setCategoryItemsState;
+window.isItemActive = isItemActive;
+window.getActiveTeaIds = getActiveTeaIds;
+window.getActiveToppingIds = getActiveToppingIds;
+window.getActivePastryIds = getActivePastryIds;
+
 
 /**
  * Tăng / giảm giá bán của món

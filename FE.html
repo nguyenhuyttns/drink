@@ -46,6 +46,9 @@
         </span>
     </div>
 
+    <!-- Quick Buy Alert Floating Banner -->
+    <div id="quick-buy-banner" class="hidden fixed top-16 left-1/2 transform -translate-x-1/2 z-50 max-w-lg w-full px-4"></div>
+
     <!-- UI Overlay -->
     <div class="ui-layer flex flex-col justify-between p-3 sm:p-5">
 
@@ -65,8 +68,8 @@
                 </div>
             </div>
 
-            <!-- Stats Indicators -->
-            <div class="pastel-panel interactive rounded-2xl px-3 sm:px-5 py-2 flex flex-wrap items-center gap-3 sm:gap-6">
+            <!-- Stats Indicators & Target Progress -->
+            <div class="pastel-panel interactive rounded-2xl px-3 sm:px-5 py-2 flex flex-wrap items-center gap-3 sm:gap-5">
                 <div class="flex items-center gap-2">
                     <span class="text-xl">💰</span>
                     <div>
@@ -92,33 +95,38 @@
                 </div>
                 <div class="h-7 w-[2px] bg-pink-100 hidden sm:block"></div>
                 <div class="flex items-center gap-2">
-                    <span class="text-xl">😊</span>
-                    <div>
-                        <div class="text-[11px] font-bold text-gray-400 uppercase">Khách phục vụ</div>
-                        <div id="stat-customers" class="text-sm sm:text-base font-extrabold text-purple-600">0</div>
-                    </div>
-                </div>
-                <div class="h-7 w-[2px] bg-pink-100 hidden sm:block"></div>
-                <div class="flex items-center gap-2">
                     <span class="text-xl">⭐</span>
                     <div>
                         <div class="text-[11px] font-bold text-gray-400 uppercase">Đánh giá tiệm</div>
                         <div id="stat-rating" class="text-sm sm:text-base font-extrabold text-amber-500">5.0 ⭐</div>
                     </div>
                 </div>
+                <div class="h-7 w-[2px] bg-pink-100 hidden sm:block"></div>
+
+                <!-- Daily Target Progress Widget -->
+                <div id="target-progress-badge" class="flex flex-col justify-center min-w-[155px]">
+                    <div class="flex items-center justify-between text-[11px] font-black text-pink-600 mb-1">
+                        <span id="target-progress-label">🎯 Mục tiêu: 0đ / 100.000đ (0%)</span>
+                    </div>
+                    <div class="w-full bg-pink-100 rounded-full h-2.5 overflow-hidden shadow-inner">
+                        <div id="target-progress-bar" class="h-full bg-pink-500 rounded-full transition-all duration-300" style="width: 0%;"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Management Action Buttons -->
-            <!-- Management Action Buttons -->
             <div class="flex items-center gap-2 interactive flex-wrap">
-                <button onclick="openDailyMenuModal()" class="pastel-panel hover:bg-rose-50 text-rose-600 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-1.5 shadow-sm" title="Chọn thực đơn món mở bán trong ngày">
-                    🥐 Menu Bán Hôm Nay
+                <button onclick="openStartDayModal()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-1.5 shadow-md" title="Thiết lập mục tiêu và mở cửa quán ngày mới">
+                    🚪 Mở Cửa / Target
+                </button>
+                <button onclick="openDailyReportModal()" class="pastel-panel hover:bg-sky-50 text-sky-700 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-1.5 shadow-sm" title="Xem bảng báo cáo kế toán chi phí, lãi lỗ trong ngày">
+                    📊 Kế Toán
+                </button>
+                <button onclick="openDecorCustomizerModal()" class="pastel-panel hover:bg-teal-50 text-teal-700 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-1.5 shadow-sm" title="Tùy chọn nền gạch và bật/tắt đồ nội thất">
+                    🎨 Nền & Nội Thất
                 </button>
                 <button onclick="openInventoryModal()" class="pastel-panel hover:bg-emerald-50 text-emerald-600 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-1.5 shadow-sm" title="Mở kho & chợ sỉ nguyên liệu">
                     📦 Kho Hàng
-                </button>
-                <button onclick="openMenuSettingsModal()" class="pastel-panel hover:bg-indigo-50 text-indigo-600 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-1.5 shadow-sm" title="Quản lý menu & tùy chỉnh giá bán">
-                    📋 Menu & Giá
                 </button>
                 <button onclick="openStaffModal()" class="pastel-panel hover:bg-purple-50 text-purple-600 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-1.5 shadow-sm" title="Tuyển dụng nhân viên phục vụ & phụ quầy">
                     🧑‍🍳 Nhân Viên
@@ -137,9 +145,6 @@
                 </button>
                 <button onclick="resetCameraView()" class="pastel-panel hover:bg-pink-50 text-gray-600 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-1">
                     🏠 Toàn Cảnh
-                </button>
-                <button onclick="startNewDay()" class="bg-amber-400 hover:bg-amber-500 text-white font-bold px-3 py-2 rounded-xl text-xs sm:text-sm shadow transition">
-                    ☀️ Ngày mới
                 </button>
                 <button onclick="openResetModal()" class="bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition">
                     🔄 Đặt lại
@@ -523,44 +528,237 @@
         </div>
     </div>
 
-    <!-- MODAL: LÊN THỰC ĐƠN BÁN HẰNG NGÀY (DAILY MENU PLANNING) -->
-    <div id="daily-menu-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-        <div class="pastel-panel interactive rounded-3xl p-5 sm:p-6 w-full max-w-xl max-h-[90vh] flex flex-col animate-pop shadow-2xl">
+    <!-- MODAL: BẮT ĐẦU NGÀY MỚI & THIẾT LẬP TARGET (START OF DAY MODAL) -->
+    <div id="start-day-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/45 backdrop-blur-sm p-3 sm:p-4">
+        <div class="pastel-panel interactive rounded-3xl p-5 sm:p-6 w-full max-w-2xl max-h-[92vh] flex flex-col animate-pop shadow-2xl">
+            <!-- Header -->
             <div class="flex items-center justify-between border-b-2 border-pink-100 pb-3 mb-3">
                 <div class="flex items-center gap-2.5">
                     <span class="text-3xl">☀️</span>
                     <div>
-                        <h3 class="font-title text-xl text-pink-600 leading-none">Thực Đơn Mở Bán Cho Ngày Mới</h3>
-                        <span class="text-xs text-gray-500 font-semibold">Khách đến sẽ chỉ gọi những món tiệm bật bán hôm nay</span>
+                        <h3 class="font-title text-xl text-pink-600 leading-none">Bắt Đầu Ngày Mới & Mở Cửa Quán</h3>
+                        <span class="text-xs text-gray-500 font-semibold">Chọn mục tiêu hôm nay, kiểm tra nguyên liệu và lên menu bán</span>
                     </div>
                 </div>
-                <button onclick="closeDailyMenuModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-rose-100 text-gray-500 hover:text-rose-600 font-bold flex items-center justify-center transition">
+                <button onclick="closeStartDayModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-rose-100 text-gray-500 hover:text-rose-600 font-bold flex items-center justify-center transition">
                     ✕
                 </button>
             </div>
 
-            <!-- Tabs: Trà Cơ Bản | Topping | Bánh Ngọt -->
-            <div class="flex items-center gap-2 mb-3 border-b border-pink-100 pb-2.5">
-                <button id="tab-daily-teas" onclick="setDailyMenuCategory('teas')" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-pink-500 text-white shadow-sm transition">
-                    🍵 Cốt Trà Bán
-                </button>
-                <button id="tab-daily-toppings" onclick="setDailyMenuCategory('toppings')" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-gray-600 hover:bg-pink-50 transition border border-pink-100">
-                    🍡 Topping Bán
-                </button>
-                <button id="tab-daily-pastries" onclick="setDailyMenuCategory('pastries')" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-gray-600 hover:bg-pink-50 transition border border-pink-100">
-                    🥐 Bánh Kẹo Bán
-                </button>
+            <div class="overflow-y-auto pr-1 flex-1 space-y-4">
+                <!-- 1. CHỌN MỤC TIÊU NGÀY (DAILY TARGET) -->
+                <div class="p-3.5 rounded-2xl bg-white border-2 border-pink-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🎯</span>
+                            <h4 class="font-bold text-gray-800 text-sm">1. Thiết Lập Target Hôm Nay</h4>
+                        </div>
+                        <span class="text-[11px] font-bold text-pink-600">Đạt target sẽ kết thúc ngày và mở bảng kế toán</span>
+                    </div>
+
+                    <!-- Preset Target Buttons -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2.5">
+                        <button id="target-preset-50000" onclick="selectDailyTargetPreset('revenue', 50000)" class="px-2.5 py-2 rounded-xl text-xs font-bold bg-white text-gray-700 hover:bg-pink-50 transition border border-pink-200">
+                            50.000đ<br><span class="text-[10px] text-gray-400 font-normal">Khởi động</span>
+                        </button>
+                        <button id="target-preset-100000" onclick="selectDailyTargetPreset('revenue', 100000)" class="px-2.5 py-2 rounded-xl text-xs font-black bg-pink-500 text-white shadow transition border border-pink-500">
+                            100.000đ<br><span class="text-[10px] opacity-90 font-normal">Tiêu chuẩn</span>
+                        </button>
+                        <button id="target-preset-200000" onclick="selectDailyTargetPreset('revenue', 200000)" class="px-2.5 py-2 rounded-xl text-xs font-bold bg-white text-gray-700 hover:bg-pink-50 transition border border-pink-200">
+                            200.000đ<br><span class="text-[10px] text-gray-400 font-normal">Thử thách</span>
+                        </button>
+                        <button id="target-preset-300000" onclick="selectDailyTargetPreset('revenue', 300000)" class="px-2.5 py-2 rounded-xl text-xs font-bold bg-white text-gray-700 hover:bg-pink-50 transition border border-pink-200">
+                            300.000đ<br><span class="text-[10px] text-gray-400 font-normal">VIP Tiệm lớn</span>
+                        </button>
+                    </div>
+
+                    <!-- Custom input & Switch to Cups -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex-1 flex items-center gap-2 bg-pink-50/60 border border-pink-200 rounded-xl px-3 py-1.5">
+                            <span class="text-xs font-bold text-gray-600">Tùy chỉnh:</span>
+                            <input id="start-day-target-input" type="number" step="10000" min="20000" value="100000" class="w-full bg-transparent text-sm font-extrabold text-pink-700 focus:outline-none" placeholder="Nhập số tiền mục tiêu...">
+                            <span class="text-xs font-bold text-pink-600">VNĐ</span>
+                        </div>
+                        <button onclick="selectDailyTargetPreset('cups', 10)" class="px-3 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold transition">
+                            🥤 Mục tiêu 10 ly
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. KIỂM TRA NHANH KHO NGUYÊN LIỆU (STOCK CHECK) -->
+                <div class="p-3.5 rounded-2xl bg-white border-2 border-pink-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">📦</span>
+                            <h4 class="font-bold text-gray-800 text-sm">2. Chuẩn Bị Kho & Nguyên Liệu</h4>
+                        </div>
+                        <button onclick="openInventoryModal()" class="text-xs font-bold text-emerald-600 hover:underline">
+                            + Nhập hàng sỉ tại Chợ →
+                        </button>
+                    </div>
+                    <div id="start-day-stock-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
+                <!-- 3. CHỌN MÓN MỞ BÁN HÔM NAY (MENU PLANNING) -->
+                <div class="p-3.5 rounded-2xl bg-white border-2 border-pink-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🥐</span>
+                            <h4 class="font-bold text-gray-800 text-sm">3. Chọn Thực Đơn Bán Trong Ngày</h4>
+                        </div>
+                        <span class="text-[11px] font-bold text-gray-400">Tùy ý bật/tắt món</span>
+                    </div>
+
+                    <!-- Category Tabs -->
+                    <div class="flex items-center gap-2 mb-2.5 border-b border-pink-100 pb-2">
+                        <button id="tab-daily-teas" onclick="setDailyMenuCategory('teas')" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-pink-500 text-white shadow-sm transition">
+                            🍵 Cốt Trà Bán
+                        </button>
+                        <button id="tab-daily-toppings" onclick="setDailyMenuCategory('toppings')" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 hover:bg-pink-50 transition border border-pink-100">
+                            🍡 Topping Bán
+                        </button>
+                        <button id="tab-daily-pastries" onclick="setDailyMenuCategory('pastries')" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 hover:bg-pink-50 transition border border-pink-100">
+                            🥐 Bánh Kẹo Bán
+                        </button>
+                    </div>
+
+                    <!-- Active Items List -->
+                    <div id="daily-menu-items-list" class="grid grid-cols-1 gap-2 max-h-[28vh] overflow-y-auto pr-1">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
             </div>
 
-            <!-- Items list -->
-            <div id="daily-menu-items-list" class="grid grid-cols-1 gap-2.5 overflow-y-auto pr-1 flex-1 mb-4 max-h-[50vh]">
-                <!-- Rendered dynamically -->
-            </div>
-
-            <!-- Confirm & Start Day -->
-            <button onclick="confirmDailyMenuAndStartDay()" class="btn-mint w-full bg-emerald-500 hover:bg-emerald-600 text-white font-title text-lg py-3.5 rounded-2xl shadow-lg flex items-center justify-center gap-2">
+            <!-- Footer: Mở cửa quán -->
+            <button onclick="confirmStartDayAndOpen()" class="mt-3 btn-mint w-full bg-emerald-500 hover:bg-emerald-600 text-white font-title text-lg py-3 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition">
                 <span>🚀 Mở Cửa Quán & Bắt Đầu Phục Vụ</span>
             </button>
+        </div>
+    </div>
+
+    <!-- MODAL: BÁO CÁO KẾ TOÁN TÀI CHÍNH CUỐI NGÀY (DAILY ACCOUNTING REPORT) -->
+    <div id="daily-report-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4">
+        <div class="pastel-panel interactive rounded-3xl p-5 sm:p-6 w-full max-w-lg max-h-[92vh] flex flex-col animate-pop shadow-2xl bg-white/98 border-4 border-pink-200">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b-2 border-pink-100 pb-3 mb-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">📊</span>
+                    <div>
+                        <h3 class="font-title text-xl text-pink-600 leading-none">Báo Cáo Kế Toán Cuối Ngày</h3>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span id="report-day-num" class="text-xs font-black bg-pink-100 text-pink-700 px-2.5 py-0.5 rounded-full">Ngày 1</span>
+                            <span class="text-xs font-bold text-emerald-600">🎯 Đã Hoàn Thành Mục Tiêu!</span>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="closeDailyReportModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-rose-100 text-gray-500 hover:text-rose-600 font-bold flex items-center justify-center transition">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Financial Breakdown Table -->
+            <div class="space-y-3 overflow-y-auto pr-1 flex-1 mb-4">
+                <div class="p-4 rounded-2xl bg-pink-50/50 border border-pink-100 space-y-2.5 text-xs sm:text-sm">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-gray-700 flex items-center gap-1.5">
+                            <span>📈</span> Tổng Doanh Thu Bán Hàng:
+                        </span>
+                        <span id="report-revenue" class="font-extrabold text-emerald-600 text-base">+0đ</span>
+                    </div>
+                    <div class="flex justify-between items-center text-gray-600">
+                        <span class="flex items-center gap-1.5">
+                            <span>📦</span> Giá Vốn Nguyên Liệu Tiêu Hao (COGS):
+                        </span>
+                        <span id="report-cogs" class="font-bold text-amber-700">-0đ</span>
+                    </div>
+                    <div class="flex justify-between items-center text-gray-600">
+                        <span class="flex items-center gap-1.5">
+                            <span>🛒</span> Chi Phí Nhập Kho / Mua Sắm Trong Ngày:
+                        </span>
+                        <span id="report-purchase" class="font-bold text-rose-600">-0đ</span>
+                    </div>
+                    <div class="flex justify-between items-center text-gray-600">
+                        <span class="flex items-center gap-1.5">
+                            <span>🧑‍🍳</span> Chi Phí Tiền Lương Nhân Viên:
+                        </span>
+                        <span id="report-wages" class="font-bold text-purple-700">-0đ</span>
+                    </div>
+                    <div class="h-[1px] bg-pink-200 my-1"></div>
+                    <div class="flex justify-between items-center pt-1">
+                        <span class="font-black text-gray-800 text-sm sm:text-base flex items-center gap-1.5">
+                            <span>💎</span> Lợi Nhuận Ròng (Lãi / Lời):
+                        </span>
+                        <span id="report-net-profit" class="text-lg sm:text-xl font-black text-emerald-600">+0đ</span>
+                    </div>
+                </div>
+
+                <!-- Product Sales Summary -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                    <div class="p-2.5 rounded-xl bg-pink-50 border border-pink-100">
+                        <div class="text-[11px] font-bold text-gray-500">🧋 Ly Đã Bán</div>
+                        <div id="report-cups-sold" class="text-sm font-black text-pink-600">0 ly</div>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-100">
+                        <div class="text-[11px] font-bold text-gray-500">🥐 Bánh Đã Bán</div>
+                        <div id="report-pastries-sold" class="text-sm font-black text-amber-600">0 cái</div>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100">
+                        <div class="text-[11px] font-bold text-gray-500">🍡 Topping</div>
+                        <div id="report-toppings-sold" class="text-sm font-black text-emerald-600">0 phần</div>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-purple-50 border border-purple-100">
+                        <div class="text-[11px] font-bold text-gray-500">⭐ Đánh Giá</div>
+                        <div id="report-rating" class="text-sm font-black text-purple-600">5.0 ⭐</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer: Next Day Button -->
+            <button onclick="proceedToNextDay(); closeDailyReportModal();" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-title text-base sm:text-lg py-3 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition">
+                <span>🌅 Tiếp Tục Sang Ngày Tiếp Theo</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: TÙY CHỌN NỀN GẠCH & ẨN HIỆN NỘI THẤT (DECOR & FLOORING CUSTOMIZER) -->
+    <div id="decor-customizer-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div class="pastel-panel interactive rounded-3xl p-5 sm:p-6 w-full max-w-xl max-h-[90vh] flex flex-col animate-pop shadow-2xl">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b-2 border-pink-100 pb-3 mb-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-3xl">🎨</span>
+                    <div>
+                        <h3 class="font-title text-xl text-pink-600 leading-none">Tùy Chọn Nền Gạch & Nội Thất</h3>
+                        <span class="text-xs text-gray-500 font-semibold">Thay đổi nền gạch tùy ý & ẩn hiện các đồ trang trí đã mua</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-gray-500">Ví tiền:</span>
+                        <span id="decor-customizer-money" class="text-sm font-extrabold text-emerald-600">100.000đ</span>
+                    </div>
+                    <button onclick="closeDecorCustomizerModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-rose-100 text-gray-500 hover:text-rose-600 font-bold flex items-center justify-center transition">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabs: Nền Gạch | Ẩn Hiện Đồ Nội Thất -->
+            <div class="flex items-center gap-2 mb-3 border-b border-pink-100 pb-2.5">
+                <button id="tab-customizer-floor" onclick="setDecorCustomizerTab('flooring')" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-pink-500 text-white shadow-sm transition">
+                    🏛️ Nền Gạch Quán
+                </button>
+                <button id="tab-customizer-vis" onclick="setDecorCustomizerTab('visibility')" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-gray-600 hover:bg-pink-50 transition border border-pink-100">
+                    👁️ Ẩn / Hiện Nội Thất
+                </button>
+            </div>
+
+            <!-- Content List -->
+            <div id="decor-customizer-list" class="grid grid-cols-1 gap-2.5 overflow-y-auto pr-1 flex-1 max-h-[55vh]">
+                <!-- Rendered dynamically -->
+            </div>
         </div>
     </div>
 
@@ -597,6 +795,7 @@
     <script src="js/game/inventoryService.js"></script>
     <script src="js/game/menuService.js"></script>
     <script src="js/game/staffService.js"></script>
+    <script src="js/game/accountingService.js"></script>
     <script src="js/game/orderService.js"></script>
     <script src="js/game/craftingService.js"></script>
     <script src="js/game/shopService.js"></script>
@@ -606,3 +805,4 @@
 
 </body>
 </html>
+

@@ -4,41 +4,72 @@
  * ============================================================================ */
 
 function generateRandomOrder(forcedCustomerProfile = null) {
-    // 1. Trà cơ bản: CHỈ lấy từ danh sách đang bán (Active Menu)
-    const activeTeaKeys = (typeof getActiveTeaIds === 'function') ? getActiveTeaIds() : Object.keys(TEA_MENU);
-    const validTeaKeys = activeTeaKeys.length > 0 ? activeTeaKeys : Object.keys(TEA_MENU);
-    const randomTeaKey = validTeaKeys[Math.floor(Math.random() * validTeaKeys.length)];
-    const teaObj = TEA_MENU[randomTeaKey];
+    const hasBakery = Boolean(gameState.upgrades && gameState.upgrades.bakery_counter);
+    const activePastries = (hasBakery && typeof getActivePastryIds === 'function') ? getActivePastryIds() : [];
+    let activeTeaKeys = (typeof getActiveTeaIds === 'function') ? getActiveTeaIds() : Object.keys(TEA_MENU);
 
-    // 2. Topping: CHỈ lấy từ topping đang bán
-    const activeTopKeys = (typeof getActiveToppingIds === 'function') ? getActiveToppingIds() : Object.keys(TOPPING_MENU);
-    const shuffledTops = [...activeTopKeys].sort(() => 0.5 - Math.random());
-    const maxTops = Math.min(3, shuffledTops.length);
-    const numToppings = Math.floor(Math.random() * (maxTops + 1)); // 0 đến maxTops
-    const chosenToppings = shuffledTops.slice(0, numToppings);
+    const hasPastries = hasBakery && activePastries.length > 0;
+    const hasTeas = activeTeaKeys.length > 0;
 
-    // 3. Bánh ngọt / Bánh kẹo: Chọn nếu có trong Menu đang bán
+    // Dự phòng an toàn nếu không có món nào
+    if (!hasPastries && !hasTeas) {
+        activeTeaKeys = ['classic'];
+    }
+
+    // Xác định loại đơn
+    let isPastryOnly = false;
+    if (hasPastries && !hasTeas) {
+        // Chỉ bán bánh ngọt -> 100% khách vào mua bánh
+        isPastryOnly = true;
+    } else if (hasPastries && hasTeas) {
+        // Có cả hai -> 25% khách chỉ mua bánh
+        isPastryOnly = Math.random() < 0.25;
+    } else {
+        // Không có quầy bánh hoặc tắt hết bánh -> 0% bánh
+        isPastryOnly = false;
+    }
+
+    let randomTeaKey = null;
+    let chosenToppings = [];
     let chosenPastryId = null;
-    const activePastries = (typeof getActivePastryIds === 'function') ? getActivePastryIds() : [];
-    const hasBakeryCase = (typeof gameState !== 'undefined' && gameState.upgrades && gameState.upgrades.bakery_counter);
-    if (activePastries.length > 0 && (hasBakeryCase || Math.random() < 0.65)) {
-        // 50% cơ hội khách gọi thêm bánh ngọt ăn kèm
-        if (Math.random() < 0.55) {
+    let totalPrice = 0;
+
+    if (isPastryOnly) {
+        // 1. ĐƠN CHỈ MUA BÁNH NGỌT TẠI QUẦY BÁNH
+        chosenPastryId = activePastries[Math.floor(Math.random() * activePastries.length)];
+        totalPrice = (typeof getPastryCurrentPrice === 'function') ? getPastryCurrentPrice(chosenPastryId) : 18000;
+    } else {
+        // 2. ĐƠN CÓ NƯỚC (NƯỚC ĐƠN LẺ HOẶC COMBO KÈM BÁNH)
+        const validTeaKeys = activeTeaKeys.length > 0 ? activeTeaKeys : ['classic'];
+        randomTeaKey = validTeaKeys[Math.floor(Math.random() * validTeaKeys.length)];
+        const teaObj = TEA_MENU[randomTeaKey] || TEA_MENU['classic'];
+
+        const activeTopKeys = (typeof getActiveToppingIds === 'function') ? getActiveToppingIds() : Object.keys(TOPPING_MENU);
+        if (activeTopKeys.length > 0) {
+            const shuffledTops = [...activeTopKeys].sort(() => 0.5 - Math.random());
+            const maxTops = Math.min(3, shuffledTops.length);
+            const numToppings = Math.floor(Math.random() * (maxTops + 1));
+            chosenToppings = shuffledTops.slice(0, numToppings);
+        } else {
+            chosenToppings = [];
+        }
+
+        const currentTeaPrice = (typeof getDrinkCurrentPrice === 'function') ? getDrinkCurrentPrice(randomTeaKey) : teaObj.price;
+        totalPrice = currentTeaPrice;
+        chosenToppings.forEach(tKey => {
+            totalPrice += (TOPPING_MENU[tKey] ? TOPPING_MENU[tKey].price : 5000);
+        });
+
+        // 35% cơ hội gọi thêm bánh ngọt ăn kèm combo (CHỈ KHI ĐÃ CÓ QUẦY BÁNH & BẬT BÁNH)
+        if (hasPastries && Math.random() < 0.35) {
             chosenPastryId = activePastries[Math.floor(Math.random() * activePastries.length)];
+            if (typeof getPastryCurrentPrice === 'function') {
+                totalPrice += getPastryCurrentPrice(chosenPastryId);
+            }
         }
     }
 
-    // 4. Tính toán tổng giá tiền bán
-    const currentTeaPrice = (typeof getDrinkCurrentPrice === 'function') ? getDrinkCurrentPrice(randomTeaKey) : teaObj.price;
-    let totalPrice = currentTeaPrice;
-    chosenToppings.forEach(tKey => {
-        totalPrice += TOPPING_MENU[tKey].price;
-    });
-    if (chosenPastryId && typeof getPastryCurrentPrice === 'function') {
-        totalPrice += getPastryCurrentPrice(chosenPastryId);
-    }
-
-    // 5. Khách hàng: lấy từ hàng đợi nếu có, hoặc ngẫu nhiên
+    // Khách hàng: lấy từ hàng đợi nếu có, hoặc ngẫu nhiên
     const profile = forcedCustomerProfile || CUSTOMER_PROFILES[Math.floor(Math.random() * CUSTOMER_PROFILES.length)];
     
     // Kiểm tra bàn trống sạch
@@ -59,7 +90,7 @@ function generateRandomOrder(forcedCustomerProfile = null) {
 function spawnNextCustomer() {
     if (gameState.phase !== 'WAITING_SPAWN') return;
 
-    // Lấy khách hàng tiếp theo từ đầu hàng chờ xếp hàng
+    // Lấy khách hàng tiếp theo từ đầu hàng chờ xếp hàng duy nhất
     let nextProfile = null;
     if (typeof advanceCustomerQueue === 'function' && typeof scene !== 'undefined') {
         nextProfile = advanceCustomerQueue(scene);
@@ -78,7 +109,7 @@ function spawnNextCustomer() {
             customerGroup.userData.miniCupGroup.visible = false;
         }
 
-        // Bước từ hàng chờ (z = 2.75) hoặc từ cửa vào quầy
+        // Bước từ đầu hàng chờ (z = 2.75) hoặc từ cửa vào quầy
         const startZ = (typeof customerQueue !== 'undefined' && customerQueue.length > 0) ? 2.75 : 2.2;
         const startX = (typeof customerQueue !== 'undefined' && customerQueue.length > 0) ? -0.25 : -5.8;
         customerGroup.position.set(startX, 0, startZ);
@@ -86,7 +117,14 @@ function spawnNextCustomer() {
         customerGroup.visible = true;
     }
 
-    customerAnim.targetPos.set(-0.25, 0, 1.35);
+    // ĐIỀU HƯỚNG QUẦY PHỤC VỤ (DUAL-COUNTER ROUTING):
+    // - Chỉ mua bánh -> Sang Quầy Bánh (-4.3, 0, 1.35)
+    // - Mua nước (hoặc Combo nước + bánh) -> Sang Quầy Nước (-0.25, 0, 1.35)
+    if (!order.teaId && order.pastryId) {
+        customerAnim.targetPos.set(-4.3, 0, 1.35);
+    } else {
+        customerAnim.targetPos.set(-0.25, 0, 1.35);
+    }
     customerAnim.active = true;
 
     // Dọn ly trên quầy cho khách mới
@@ -99,7 +137,7 @@ function spawnNextCustomer() {
 function onCustomerArrivedAtCounter() {
     gameState.phase = 'ORDERING';
     if (customerGroup) {
-        customerGroup.rotation.y = Math.PI; // Quay mặt về phía quầy & barista
+        customerGroup.rotation.y = Math.PI; // Quay mặt về phía quầy
     }
     playSoundEffect('bell');
 
@@ -110,17 +148,16 @@ function onCustomerArrivedAtCounter() {
     if (!order) return;
 
     // Tính toán thời gian kiên nhẫn theo chiến lược định giá
-    const currentPrice = (typeof getDrinkCurrentPrice === 'function') ? getDrinkCurrentPrice(order.teaId) : TEA_MENU[order.teaId].price;
-    const baseStandardPrice = TEA_MENU[order.teaId].price;
-    const priceDiff = currentPrice - baseStandardPrice;
-    
     let patienceTime = 16;
-    if (priceDiff > 0) {
-        // Giá cao -> Khách khó tính hơn, kiên nhẫn giảm
-        patienceTime = Math.max(10, 16 - (priceDiff / 1000) * 0.4);
-    } else if (priceDiff < 0) {
-        // Giá rẻ -> Khách dễ tính hơn, kiên nhẫn tăng
-        patienceTime = Math.min(24, 16 + Math.abs(priceDiff / 1000) * 0.5);
+    if (order.teaId && TEA_MENU[order.teaId]) {
+        const currentPrice = (typeof getDrinkCurrentPrice === 'function') ? getDrinkCurrentPrice(order.teaId) : TEA_MENU[order.teaId].price;
+        const baseStandardPrice = TEA_MENU[order.teaId].price;
+        const priceDiff = currentPrice - baseStandardPrice;
+        if (priceDiff > 0) {
+            patienceTime = Math.max(10, 16 - (priceDiff / 1000) * 0.4);
+        } else if (priceDiff < 0) {
+            patienceTime = Math.min(24, 16 + Math.abs(priceDiff / 1000) * 0.5);
+        }
     }
 
     // Thưởng thêm thời gian từ Cún Tiếp Tân & Thảm Hoa Ấm Áp
@@ -135,41 +172,45 @@ function onCustomerArrivedAtCounter() {
         startPatienceTimer(patienceTime);
     }
 
-    // Hiển thị thông báo
-    const pastryNote = order.pastryId && typeof PASTRY_MENU !== 'undefined' && PASTRY_MENU[order.pastryId] ? ` + ${PASTRY_MENU[order.pastryId].name}` : '';
-    showToast(`🛎️ ${order.customer.name} gọi món: ${TEA_MENU[order.teaId].name}${pastryNote}!`);
+    // Hiển thị thông báo gọi món
+    const teaName = (order.teaId && TEA_MENU[order.teaId]) ? TEA_MENU[order.teaId].name : '';
+    const pastryNote = (order.pastryId && typeof PASTRY_MENU !== 'undefined' && PASTRY_MENU[order.pastryId]) 
+        ? (order.teaId ? ` + ${PASTRY_MENU[order.pastryId].name}` : PASTRY_MENU[order.pastryId].name) 
+        : '';
+    showToast(`🛎️ ${order.customer.name} gọi: ${order.teaId ? teaName + pastryNote : pastryNote}!`);
 }
 
 function validateDrinkAgainstOrder() {
     const order = gameState.currentOrder;
     if (!order) return;
 
-    const madeTea = gameState.cup.teaId;
-    const madeTops = Array.from(gameState.cup.toppings);
-
     let errors = [];
 
-    // Kiểm tra loại trà
-    if (madeTea !== order.teaId) {
-        errors.push(`Sai loại trà (Khách gọi ${TEA_MENU[order.teaId].name})`);
+    // Nếu đơn có trà sữa
+    if (order.teaId) {
+        const madeTea = gameState.cup.teaId;
+        const madeTops = Array.from(gameState.cup.toppings);
+
+        if (madeTea !== order.teaId) {
+            errors.push(`Sai loại trà (Khách gọi ${TEA_MENU[order.teaId].name})`);
+        }
+
+        const missingTops = order.toppings.filter(t => !gameState.cup.toppings.has(t));
+        const extraTops = madeTops.filter(t => !order.toppings.includes(t));
+
+        if (missingTops.length > 0) {
+            errors.push('Thiếu ' + missingTops.map(t => TOPPING_MENU[t].name).join(', '));
+        }
+        if (extraTops.length > 0) {
+            errors.push('Dư ' + extraTops.map(t => TOPPING_MENU[t].name).join(', '));
+        }
     }
 
-    // Kiểm tra toppings
-    const missingTops = order.toppings.filter(t => !gameState.cup.toppings.has(t));
-    const extraTops = madeTops.filter(t => !order.toppings.includes(t));
-
-    if (missingTops.length > 0) {
-        errors.push('Thiếu ' + missingTops.map(t => TOPPING_MENU[t].name).join(', '));
-    }
-    if (extraTops.length > 0) {
-        errors.push('Dư ' + extraTops.map(t => TOPPING_MENU[t].name).join(', '));
-    }
-
-    // Kiểm tra bánh ngọt kèm theo
+    // Nếu đơn có bánh ngọt kèm theo hoặc chỉ mua bánh
     if (order.pastryId) {
         const pName = (typeof PASTRY_MENU !== 'undefined' && PASTRY_MENU[order.pastryId]) ? PASTRY_MENU[order.pastryId].name : 'bánh ngọt';
         if (gameState.cup.pastryId !== order.pastryId) {
-            errors.push(`Thiếu bánh kèm (${pName})`);
+            errors.push(`Thiếu bánh (${pName})`);
         } else if (typeof checkCanServePastry === 'function' && !checkCanServePastry(order.pastryId)) {
             errors.push(`Hết bánh (${pName}) trong kho`);
         }
@@ -195,7 +236,7 @@ function validateDrinkAgainstOrder() {
                 if (errBox) errBox.classList.add('hidden');
             }, 2500);
         }
-        showToast(`❌ Khách báo sai món: ${reasonText}. Đã dọn ly để bạn làm lại!`);
+        showToast(`❌ Khách báo sai món: ${reasonText}. Đã dọn lại để bạn làm lại!`);
 
         setTimeout(() => {
             clearCurrentCup(false);
@@ -223,6 +264,11 @@ function validateDrinkAgainstOrder() {
         playSoundEffect('cash');
         updateTopStatsUI();
 
+        // Ghi nhận vào hệ thống kế toán & kiểm tra tiến độ Target ngày
+        if (typeof recordOrderSaleAndCheckTarget === 'function') {
+            recordOrderSaleAndCheckTarget(order);
+        }
+
         // Ẩn thanh đánh sao sau khi phục vụ xong
         hideSpeechBubble();
 
@@ -233,21 +279,50 @@ function validateDrinkAgainstOrder() {
         // Dọn ly trên quầy cho lượt sau
         clearCurrentCup(false);
 
-        // Khách hàng cầm ly ra bàn ngồi (nếu dine-in) hoặc mang về ra cửa
         const canDineIn = order.dineIn && typeof getAvailableSeat === 'function' && getAvailableSeat();
+
+        // NẾU LÀ ĐƠN COMBO (VỪA NƯỚC VỪA BÁNH): KHÁCH BƯỚC SANG QUẦY BÁNH LẤY BÁNH TRƯỚC
+        if (order.teaId && order.pastryId && customerAnim) {
+            customerAnim.targetPos.set(-4.3, 0, 1.35); // Bước sang Quầy Bánh
+            customerAnim.active = true;
+
+            setTimeout(() => {
+                if (canDineIn && typeof startCustomerDineIn === 'function') {
+                    if (customerGroup) customerGroup.visible = false;
+                    startCustomerDineIn(order, scene);
+
+                    gameState.phase = 'WAITING_SPAWN';
+                    gameState.currentOrder = null;
+                    updateOrderTicketUI();
+                    setTimeout(() => {
+                        if (gameState.dailyTarget && !gameState.dailyTarget.isReached) {
+                            spawnNextCustomer();
+                        }
+                    }, 800);
+                } else {
+                    gameState.phase = 'WALKING_OUT';
+                    customerAnim.targetPos.set(-6.2, 0, 2.2);
+                    customerAnim.active = true;
+                    updateOrderTicketUI();
+                }
+            }, 1100);
+            return;
+        }
 
         if (canDineIn && typeof startCustomerDineIn === 'function') {
             // Uống tại quán -> Chuyển đến bàn ngồi
             if (customerGroup) customerGroup.visible = false;
             startCustomerDineIn(order, scene);
 
-            // Quầy ngay lập tức sẵn sàng đón khách tiếp theo sau 0.8s
+            // Quầy ngay lập tức sẵn sàng đón khách tiếp theo sau 0.8s nếu chưa đạt target kết thúc ngày
             gameState.phase = 'WAITING_SPAWN';
             gameState.currentOrder = null;
             updateOrderTicketUI();
 
             setTimeout(() => {
-                spawnNextCustomer();
+                if (gameState.dailyTarget && !gameState.dailyTarget.isReached) {
+                    spawnNextCustomer();
+                }
             }, 800);
         } else {
             // Khách mang về bước ra cửa

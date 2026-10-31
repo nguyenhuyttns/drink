@@ -72,14 +72,41 @@ const gameState = {
             cheese: { enabled: true, price: 10000 }
         },
         pastries: {
-            croissant: { enabled: true, price: 15000 },
-            donut: { enabled: true, price: 18000 },
-            macaron: { enabled: true, price: 22000 },
-            cupcake: { enabled: true, price: 20000 }
+            croissant: { enabled: false, price: 15000 },
+            donut: { enabled: false, price: 18000 },
+            macaron: { enabled: false, price: 22000 },
+            cupcake: { enabled: false, price: 20000 }
         }
     },
 
-    // 3. Nhân sự của quán
+    // 3. Cấu hình & Bậc Nâng Cấp Đa Tầng (Multi-Tier Upgrade Levels)
+    upgradeLevels: {
+        neon_sign: 0,
+        music_box: 0,
+        cozy_carpet: 0,
+        auto_sealer: 0,
+        bakery_counter: 0,
+        extra_tables: 0,
+        expand_shop: 0
+    },
+
+    // 4. Công Tắc Ẩn / Hiện Đồ Nội Thất Đã Mua (Decor Visibility Toggles)
+    decorVisibility: {
+        neon_sign: true,
+        music_box: true,
+        cozy_carpet: true,
+        bakery_counter: true,
+        extra_tables: true,
+        expand_shop: true
+    },
+
+    // 5. Hệ Thống Nền Gạch Tùy Ý (Customizable Flooring)
+    flooring: {
+        current: 'checker_pink', // 'checker_pink' | 'oak_wood' | 'luxury_marble' | 'retro_mint'
+        unlocked: ['checker_pink']
+    },
+
+    // 6. Nhân sự của quán
     staff: {
         waiter: false,            // Bé Thỏ chạy bàn (tự dọn bàn)
         barista_assistant: false, // Bé Gấu phụ quầy (tự rót trà & topping)
@@ -87,7 +114,27 @@ const gameState = {
         greeter_dog: false        // Bé Cún tiếp tân (tăng kiên nhẫn hàng chờ)
     },
 
-    // 4. Nhật ký tài chính trong ngày
+    // 7. Mục Tiêu Trong Ngày (Daily Target)
+    dailyTarget: {
+        type: 'revenue',          // 'revenue' (Doanh thu) hoặc 'cups' (Số ly)
+        targetAmount: 100000,     // Mục tiêu tiền (vd 100.000đ) hoặc số ly (vd 10 ly)
+        currentAmount: 0,         // Tiến độ đã đạt trong ngày hôm nay
+        isReached: false,         // Đã đạt mục tiêu chưa
+        isDayOpen: false          // Trạng thái quán đã mở cửa phục vụ hay chưa
+    },
+
+    // 8. Bảng Kế Toán Thống Kê Tài Chính Hằng Ngày (Daily Accounting Book)
+    accountingToday: {
+        revenue: 0,               // Doanh thu tiền bán được
+        cogs: 0,                  // Chi phí giá vốn nguyên liệu thực tế tiêu hao (COGS)
+        purchaseExpenses: 0,      // Tiền đã chi ra để mua sắm / nhập kho trong ngày
+        staffWages: 0,            // Tiền lương nhân viên đã trả trong ngày
+        cupsSold: 0,              // Số cốc trà sữa đã bán
+        pastriesSold: 0,          // Số bánh ngọt đã bán
+        toppingsSold: 0           // Số topping đã thêm
+    },
+
+    // 9. Nhật ký tài chính trong ngày cũ (tương thích ngược)
     dayStats: {
         ingredientSpent: 0,
         wagesPaid: 0,

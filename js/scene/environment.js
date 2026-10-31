@@ -3,8 +3,24 @@
  * Bao gồm sàn gạch, tường pastel, cửa ra vào, bàn ghế khách, chậu cây & menu treo tường.
  * ============================================================================ */
 
+let shopFloorTiles = [];
+
+function changeFlooring3D(floorId) {
+    if (!shopFloorTiles || shopFloorTiles.length === 0) return;
+    const meta = (typeof FLOORING_CATALOG !== 'undefined') ? FLOORING_CATALOG.find(f => f.id === floorId) : null;
+    if (!meta) return;
+
+    const matA = new THREE.MeshLambertMaterial({ color: meta.colorA });
+    const matB = new THREE.MeshLambertMaterial({ color: meta.colorB });
+
+    shopFloorTiles.forEach(item => {
+        item.mesh.material = item.isEven ? matA : matB;
+    });
+}
+
 function buildPastelShopEnvironment(targetScene) {
     const shopGroup = new THREE.Group();
+    shopFloorTiles = [];
 
     // 1. Đế nền bên dưới sàn
     const baseGeo = new THREE.BoxGeometry(12.4, 0.4, 10.4);
@@ -16,8 +32,12 @@ function buildPastelShopEnvironment(targetScene) {
 
     // 2. Sàn gạch caro Pastel (Checkered Tiles)
     const tileGeo = new THREE.BoxGeometry(1, 0.08, 1);
-    const matCream = new THREE.MeshLambertMaterial({ color: 0xfffdf9 });
-    const matPink = new THREE.MeshLambertMaterial({ color: 0xfce7f3 });
+    const currentFloorId = (typeof gameState !== 'undefined' && gameState.flooring) ? gameState.flooring.current : 'checker_pink';
+    const floorMeta = (typeof FLOORING_CATALOG !== 'undefined') ? FLOORING_CATALOG.find(f => f.id === currentFloorId) : null;
+    const colorA = floorMeta ? floorMeta.colorA : 0xfffdf9;
+    const colorB = floorMeta ? floorMeta.colorB : 0xfce7f3;
+    const matCream = new THREE.MeshLambertMaterial({ color: colorA });
+    const matPink = new THREE.MeshLambertMaterial({ color: colorB });
 
     for (let x = -5.5; x <= 5.5; x += 1) {
         for (let z = -4.5; z <= 4.5; z += 1) {
@@ -26,6 +46,7 @@ function buildPastelShopEnvironment(targetScene) {
             tile.position.set(x, 0.02, z);
             tile.receiveShadow = true;
             shopGroup.add(tile);
+            shopFloorTiles.push({ mesh: tile, isEven: isEven });
         }
     }
 

@@ -330,33 +330,32 @@ function applyUpgrade3D(upgradeId, targetScene) {
             break;
         }
 
-        // 6. CỤM BÀN GHẾ GỖ PASTEL #3 & #4 (TĂNG SỨC CHỨA LÊN 8 CHỖ)
+        // 6. CỤM BÀN GHẾ GỖ PASTEL (CẤP 1: 8 CHỖ | CẤP 2: 12 CHỖ)
         case 'extra_tables': {
+            const currentLevel = (typeof level === 'number') ? level : ((gameState.upgradeLevels && gameState.upgradeLevels.extra_tables) || 1);
             if (upgradeMeshes.extraTablesGroup) {
-                upgradeMeshes.extraTablesGroup.visible = true;
-                return;
+                targetScene.remove(upgradeMeshes.extraTablesGroup);
+                upgradeMeshes.extraTablesGroup = null;
             }
 
             const extraGroup = new THREE.Group();
             const tableMat = new THREE.MeshLambertMaterial({ color: 0xfef3c7 });
             const stoolMat = new THREE.MeshLambertMaterial({ color: 0xfbcfe8 });
+            const stoolMat2 = new THREE.MeshLambertMaterial({ color: 0xa7f3d0 });
             const legMat = new THREE.MeshLambertMaterial({ color: 0x9ca3af });
 
-            // Bàn 3 ở Z = 3.8 và Bàn 4 ở Z = -3.8
+            // Bàn 3 ở Z = 3.8 và Bàn 4 ở Z = -3.8 (Cấp 1)
             [3.8, -3.8].forEach(z => {
-                // Mặt bàn tròn
                 const top = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.06, 24), tableMat);
                 top.position.set(3.6, 0.98, z);
                 top.castShadow = true;
                 top.receiveShadow = true;
                 extraGroup.add(top);
 
-                // Chân bàn
                 const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.98, 12), legMat);
                 leg.position.set(3.6, 0.49, z);
                 extraGroup.add(leg);
 
-                // 2 ghế đẩu mỗi bàn
                 [2.45, 4.75].forEach(x => {
                     const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.06, 16), stoolMat);
                     stool.position.set(x, 0.46, z);
@@ -367,21 +366,47 @@ function applyUpgrade3D(upgradeId, targetScene) {
                 });
             });
 
+            // Nếu đạt Cấp 2: Thêm tiếp Bàn 5 & Bàn 6 (Tổng 12 chỗ ngồi!)
+            if (currentLevel >= 2) {
+                [3.8, -3.8].forEach(z => {
+                    const top2 = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.06, 24), tableMat);
+                    top2.position.set(1.0, 0.98, z);
+                    top2.castShadow = true;
+                    top2.receiveShadow = true;
+                    extraGroup.add(top2);
+
+                    const leg2 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.98, 12), legMat);
+                    leg2.position.set(1.0, 0.49, z);
+                    extraGroup.add(leg2);
+
+                    [0.35, 1.65].forEach(x => {
+                        const stool2 = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.06, 16), stoolMat2);
+                        stool2.position.set(x, 0.46, z);
+                        stool2.castShadow = true;
+                        const stoolLeg2 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.46, 8), legMat);
+                        stoolLeg2.position.set(x, 0.23, z);
+                        extraGroup.add(stool2, stoolLeg2);
+                    });
+                });
+            }
+
+            extraGroup.visible = (gameState.decorVisibility && gameState.decorVisibility.extra_tables !== undefined) ? gameState.decorVisibility.extra_tables : true;
             targetScene.add(extraGroup);
             upgradeMeshes.extraTablesGroup = extraGroup;
             break;
         }
 
-        // 7. MỞ RỘNG MẶT BẰNG QUÁN & ĐÈN THẢ TRẦN (EXPAND SHOP)
+        // 7. MỞ RỘNG MẶT BẰNG & ĐẤT QUÁN (CẤP 1: HIÊN GỖ | CẤP 2: VƯỜN SAKURA | CẤP 3: ĐẠI SẢNH)
         case 'expand_shop': {
+            const currentLevel = (typeof level === 'number') ? level : ((gameState.upgradeLevels && gameState.upgradeLevels.expand_shop) || 1);
             if (upgradeMeshes.expandShopGroup) {
-                upgradeMeshes.expandShopGroup.visible = true;
-                return;
+                targetScene.remove(upgradeMeshes.expandShopGroup);
+                upgradeMeshes.expandShopGroup = null;
             }
 
             const expandGroup = new THREE.Group();
 
-            // Sàn gỗ mở rộng hiên ngoài
+            // CẤP 1: Sàn gỗ mở rộng hiên ngoài + 3 Đèn thả trần + 2 Chậu Monstera
             const extFloorGeo = new THREE.BoxGeometry(6.5, 0.1, 4.5);
             const extFloorMat = new THREE.MeshLambertMaterial({ color: 0xfde68a });
             const extFloor = new THREE.Mesh(extFloorGeo, extFloorMat);
@@ -389,7 +414,6 @@ function applyUpgrade3D(upgradeId, targetScene) {
             extFloor.receiveShadow = true;
             expandGroup.add(extFloor);
 
-            // 3 Đèn thả trần ấm áp
             [1.5, 3.6, 5.2].forEach(x => {
                 const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 1.8, 6), new THREE.MeshBasicMaterial({ color: 0x374151 }));
                 cord.position.set(x, 4.2, 0);
@@ -400,7 +424,6 @@ function applyUpgrade3D(upgradeId, targetScene) {
                 expandGroup.add(cord, lampShade, light);
             });
 
-            // 2 Chậu cây Monstera nhiệt đới ở 2 góc
             [ { x: 6.2, z: 2.2 }, { x: -3.8, z: 2.2 } ].forEach(pos => {
                 const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.18, 0.45, 14), new THREE.MeshLambertMaterial({ color: 0xffffff }));
                 pot.position.set(pos.x, 0.225, pos.z);
@@ -410,10 +433,124 @@ function applyUpgrade3D(upgradeId, targetScene) {
                 expandGroup.add(pot, plant);
             });
 
+            // CẤP 2: VƯỜN TRÀ ZEN & CÂY HOA ANH ĐÀO SAKURA BUNG NỞ
+            if (currentLevel >= 2) {
+                // Thảm cỏ vườn xanh ngọc
+                const grassGeo = new THREE.BoxGeometry(4.2, 0.08, 4.2);
+                const grassMat = new THREE.MeshLambertMaterial({ color: 0x86efac });
+                const grassMesh = new THREE.Mesh(grassGeo, grassMat);
+                grassMesh.position.set(-3.8, -0.04, 4.8);
+                expandGroup.add(grassMesh);
+
+                // Cây hoa Sakura Nhật Bản: Thân gỗ nâu uốn lượn
+                const trunkMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.26, 2.2, 12), trunkMat);
+                trunk.position.set(-3.8, 1.1, 4.8);
+                trunk.rotation.z = 0.08;
+                expandGroup.add(trunk);
+
+                // Tán hoa anh đào hồng pastel bồng bềnh
+                const sakuraMat = new THREE.MeshLambertMaterial({ color: 0xfbcfe8 });
+                const sakuraTopMat = new THREE.MeshLambertMaterial({ color: 0xf472b6 });
+                const crown1 = new THREE.Mesh(new THREE.SphereGeometry(0.95, 12, 10), sakuraMat);
+                crown1.position.set(-3.7, 2.3, 4.8);
+                const crown2 = new THREE.Mesh(new THREE.SphereGeometry(0.75, 12, 10), sakuraTopMat);
+                crown2.position.set(-3.2, 2.6, 4.6);
+                const crown3 = new THREE.Mesh(new THREE.SphereGeometry(0.70, 12, 10), sakuraMat);
+                crown3.position.set(-4.2, 2.4, 5.0);
+                expandGroup.add(crown1, crown2, crown3);
+
+                // Đèn lồng đá Toro phong cách Nhật
+                const toroGroup = new THREE.Group();
+                toroGroup.position.set(-2.2, 0, 3.6);
+                const toroBase = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.25, 0.4), new THREE.MeshLambertMaterial({ color: 0x9ca3af }));
+                toroBase.position.y = 0.125;
+                const toroPost = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.65, 8), new THREE.MeshLambertMaterial({ color: 0x6b7280 }));
+                toroPost.position.y = 0.55;
+                const toroLight = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.35), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+                toroLight.position.y = 1.0;
+                const lanternRoof = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.28, 4), new THREE.MeshLambertMaterial({ color: 0x4b5563 }));
+                lanternRoof.position.y = 1.32;
+                lanternRoof.rotation.y = Math.PI / 4;
+                const toroPointLight = new THREE.PointLight(0xfef08a, 0.8, 4);
+                toroPointLight.position.set(0, 1.0, 0);
+                toroGroup.add(toroBase, toroPost, toroLight, lanternRoof, toroPointLight);
+                expandGroup.add(toroGroup);
+            }
+
+            // CẤP 3: ĐẠI SẢNH HOÀNG GIA ĐÔI (GRAND ROYAL HALL)
+            if (currentLevel >= 3) {
+                // Sàn đá cẩm thạch trắng viền vàng trải dài
+                const marbleGeo = new THREE.BoxGeometry(11.8, 0.09, 3.2);
+                const marbleMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+                const marbleMesh = new THREE.Mesh(marbleGeo, marbleMat);
+                marbleMesh.position.set(0, -0.04, 7.2);
+                expandGroup.add(marbleMesh);
+
+                // Thảm đỏ hoàng gia dẫn lối
+                const redCarpet = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.11, 4.5), new THREE.MeshLambertMaterial({ color: 0xbe123c }));
+                redCarpet.position.set(0, -0.02, 6.8);
+                expandGroup.add(redCarpet);
+
+                // 2 Cột cẩm thạch La Mã đầu mạ vàng
+                [-4.8, 4.8].forEach(colX => {
+                    const colMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 4.2, 16), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+                    colMesh.position.set(colX, 2.1, 7.2);
+                    const colCap = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.22, 0.68), new THREE.MeshLambertMaterial({ color: 0xf59e0b }));
+                    colCap.position.set(colX, 4.25, 7.2);
+                    expandGroup.add(colMesh, colCap);
+                });
+
+                // Đèn chùm pha lê rực rỡ treo giữa sảnh
+                const chandelier = new THREE.Group();
+                chandelier.position.set(0, 3.8, 6.8);
+                const chRing = new THREE.Mesh(new THREE.TorusGeometry(0.65, 0.05, 8, 24), new THREE.MeshLambertMaterial({ color: 0xf59e0b }));
+                chRing.rotation.x = Math.PI / 2;
+                chandelier.add(chRing);
+                const chLight = new THREE.PointLight(0xfef08a, 1.8, 8);
+                chandelier.add(chLight);
+                expandGroup.add(chandelier);
+            }
+
+            expandGroup.visible = (gameState.decorVisibility && gameState.decorVisibility.expand_shop !== undefined) ? gameState.decorVisibility.expand_shop : true;
             targetScene.add(expandGroup);
             upgradeMeshes.expandShopGroup = expandGroup;
             break;
         }
+    }
+}
+
+/**
+ * Bật / tắt hiển thị đồ trang trí theo ý muốn của người chơi
+ * @param {string} decorId 
+ * @param {boolean} isVisible 
+ */
+function setDecorVisibility3D(decorId, isVisible) {
+    if (!gameState || !gameState.decorVisibility) return;
+    gameState.decorVisibility[decorId] = isVisible;
+
+    switch (decorId) {
+        case 'neon_sign':
+            if (upgradeMeshes.neonSignGroup) upgradeMeshes.neonSignGroup.visible = isVisible;
+            break;
+        case 'cozy_carpet':
+            if (upgradeMeshes.cozyCarpetMesh) upgradeMeshes.cozyCarpetMesh.visible = isVisible;
+            break;
+        case 'music_box':
+            if (upgradeMeshes.musicBoxGroup) upgradeMeshes.musicBoxGroup.visible = isVisible;
+            break;
+        case 'bakery_counter':
+            if (upgradeMeshes.bakeryCounterGroup) upgradeMeshes.bakeryCounterGroup.visible = isVisible;
+            if (typeof staffMeshes !== 'undefined' && staffMeshes.pastry_chef) {
+                staffMeshes.pastry_chef.visible = isVisible;
+            }
+            break;
+        case 'extra_tables':
+            if (upgradeMeshes.extraTablesGroup) upgradeMeshes.extraTablesGroup.visible = isVisible;
+            break;
+        case 'expand_shop':
+            if (upgradeMeshes.expandShopGroup) upgradeMeshes.expandShopGroup.visible = isVisible;
+            break;
     }
 }
 
@@ -462,9 +599,17 @@ function applyPurchasedDecorUpgrades(targetScene) {
     if (!targetScene || !gameState || !gameState.upgrades) return;
     Object.keys(gameState.upgrades).forEach(id => {
         if (gameState.upgrades[id]) {
-            applyUpgrade3D(id, targetScene);
+            const lvl = (gameState.upgradeLevels && gameState.upgradeLevels[id]) || 1;
+            applyUpgrade3D(id, targetScene, lvl);
         }
     });
+
+    // Đồng bộ trạng thái ẩn/hiện nếu có cấu hình
+    if (gameState.decorVisibility) {
+        Object.keys(gameState.decorVisibility).forEach(id => {
+            setDecorVisibility3D(id, gameState.decorVisibility[id]);
+        });
+    }
 }
 
 

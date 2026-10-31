@@ -34,7 +34,7 @@ function updateOrderTicketUI() {
     if (['ORDERING', 'SEALING', 'AWAITING_PAYMENT'].includes(gameState.phase)) {
         const order = gameState.currentOrder;
         if (!order) return;
-        const tea = TEA_MENU[order.teaId];
+        const tea = (order.teaId && TEA_MENU[order.teaId]) ? TEA_MENU[order.teaId] : null;
 
         badge.textContent = 'Khách đang chờ';
         badge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-pink-100 text-pink-600';
@@ -49,10 +49,17 @@ function updateOrderTicketUI() {
             const dineText = order.dineIn ? '🪑 Uống tại bàn' : '🥡 Mang về';
             elDesc.textContent = `${order.customer.ageText || 'Khách tại quầy #1'} • ${dineText}`;
         }
-        document.getElementById('order-tea-name').innerHTML = `
-            <span>${tea.name}</span>
-            <span class="text-xs font-bold text-pink-500">${formatVND(tea.price)}</span>
-        `;
+        if (tea) {
+            document.getElementById('order-tea-name').innerHTML = `
+                <span>${tea.name}</span>
+                <span class="text-xs font-bold text-pink-500">${formatVND(tea.price)}</span>
+            `;
+        } else {
+            document.getElementById('order-tea-name').innerHTML = `
+                <span class="text-gray-400 italic">Không gọi đồ uống</span>
+                <span class="text-xs font-bold text-gray-400">0đ</span>
+            `;
+        }
 
         const topList = document.getElementById('order-toppings-list');
         topList.innerHTML = '';
@@ -344,21 +351,45 @@ function renderShopItems() {
 
     list.innerHTML = '';
     SHOP_UPGRADES.forEach(item => {
-        const isOwned = gameState.upgrades[item.id];
-        const canAfford = gameState.money >= item.price;
+        const currentLvl = (gameState.upgradeLevels && gameState.upgradeLevels[item.id]) || (gameState.upgrades[item.id] ? 1 : 0);
+        const maxLvl = item.maxLevel || 1;
+        const isMax = currentLvl >= maxLvl;
+
+        let nextCost = item.price;
+        let nextName = item.name;
+        let nextDesc = item.desc;
+        if (item.levels && item.levels[currentLvl]) {
+            nextCost = item.levels[currentLvl].price;
+            nextName = item.levels[currentLvl].name;
+            nextDesc = item.levels[currentLvl].desc;
+        }
+
+        const canAfford = gameState.money >= nextCost;
 
         const card = document.createElement('div');
         card.className = `p-3.5 rounded-2xl border-2 flex flex-col justify-between transition ${
-            isOwned 
+            isMax 
                 ? 'border-emerald-300 bg-emerald-50/60' 
-                : 'border-pink-100 bg-white hover:border-pink-300'
+                : currentLvl > 0 
+                    ? 'border-amber-300 bg-amber-50/40' 
+                    : 'border-pink-100 bg-white hover:border-pink-300'
         }`;
 
         let actionBtnHtml = '';
-        if (isOwned) {
+        if (isMax) {
             actionBtnHtml = `
                 <button disabled class="w-full bg-emerald-100 text-emerald-700 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1 cursor-default">
-                    ✓ Đã sở hữu
+                    ✓ Đã đạt cấp tối đa (${currentLvl}/${maxLvl})
+                </button>
+            `;
+        } else if (currentLvl > 0) {
+            actionBtnHtml = `
+                <button onclick="buyUpgrade('${item.id}')" class="w-full ${
+                    canAfford 
+                        ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm' 
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                } font-bold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1">
+                    ⚡ Lên Cấp ${currentLvl + 1} (${formatVND(nextCost)})
                 </button>
             `;
         } else {
@@ -368,23 +399,28 @@ function renderShopItems() {
                         ? 'bg-pink-500 hover:bg-pink-600 text-white shadow-sm' 
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 } font-bold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1">
-                    🛒 Mua (${formatVND(item.price)})
+                    🛒 Mua (${formatVND(nextCost)})
                 </button>
             `;
         }
+
+        const lvlBadge = maxLvl > 1 
+            ? `<span class="text-[10px] font-black px-2 py-0.5 rounded-full ${isMax ? 'bg-emerald-200 text-emerald-800' : 'bg-amber-100 text-amber-800'}">Cấp ${currentLvl}/${maxLvl}</span>` 
+            : (currentLvl > 0 ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Đã mua</span>` : '');
 
         card.innerHTML = `
             <div>
                 <div class="flex items-center justify-between mb-1.5">
                     <span class="text-2xl">${item.icon}</span>
-                    <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
-                        isOwned ? 'bg-emerald-200 text-emerald-800' : 'bg-pink-100 text-pink-600'
-                    }">
-                        ${item.category}
-                    </span>
+                    <div class="flex items-center gap-1.5">
+                        ${lvlBadge}
+                        <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-pink-100 text-pink-600">
+                            ${item.category}
+                        </span>
+                    </div>
                 </div>
                 <h4 class="font-bold text-gray-800 text-sm mb-1">${item.name}</h4>
-                <p class="text-xs text-gray-500 leading-snug mb-2">${item.desc}</p>
+                <p class="text-xs text-gray-500 leading-snug mb-1">${currentLvl > 0 && !isMax ? nextDesc : item.desc}</p>
                 <div class="text-[11px] font-bold text-pink-600 mb-3">${item.benefit}</div>
             </div>
             ${actionBtnHtml}
@@ -539,7 +575,7 @@ function renderMenuSettingsModal() {
     list.innerHTML = '';
     Object.keys(TEA_MENU).forEach(teaId => {
         const tea = TEA_MENU[teaId];
-        const isEnabled = gameState.menuConfig && gameState.menuConfig[teaId] ? gameState.menuConfig[teaId].enabled : true;
+        const isEnabled = (typeof isItemActive === 'function') ? isItemActive('teas', teaId) : true;
         const currentPrice = (typeof getDrinkCurrentPrice === 'function') ? getDrinkCurrentPrice(teaId) : tea.price;
         const cost = (typeof calculateDrinkCost === 'function') ? calculateDrinkCost(teaId) : 5000;
         const profit = currentPrice - cost;
@@ -559,7 +595,7 @@ function renderMenuSettingsModal() {
                         <span class="w-4 h-4 rounded-full inline-block shadow-sm" style="background-color: ${tea.hex};"></span>
                         <h4 class="font-bold text-gray-800 text-sm">${tea.name}</h4>
                     </div>
-                    <button onclick="toggleMenuItemState('${teaId}')" class="px-2.5 py-1 rounded-xl text-xs font-extrabold transition ${
+                    <button onclick="toggleMenuItemState('teas', '${teaId}')" class="px-2.5 py-1 rounded-xl text-xs font-extrabold transition ${
                         isEnabled 
                             ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
                             : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
@@ -587,11 +623,11 @@ function renderMenuSettingsModal() {
             <div class="flex items-center justify-between pt-1">
                 <span class="text-xs text-gray-500 font-semibold">Tùy chỉnh giá bán:</span>
                 <div class="flex items-center gap-1.5">
-                    <button onclick="adjustMenuItemPrice('${teaId}', -1000)" class="w-8 h-8 rounded-lg bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold text-base flex items-center justify-center transition active:scale-95">
+                    <button onclick="adjustMenuItemPrice('teas', '${teaId}', -1000)" class="w-8 h-8 rounded-lg bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold text-base flex items-center justify-center transition active:scale-95">
                         -
                     </button>
                     <span class="text-xs font-bold text-gray-700 px-1 min-w-[55px] text-center">${formatVND(currentPrice)}</span>
-                    <button onclick="adjustMenuItemPrice('${teaId}', 1000)" class="w-8 h-8 rounded-lg bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold text-base flex items-center justify-center transition active:scale-95">
+                    <button onclick="adjustMenuItemPrice('teas', '${teaId}', 1000)" class="w-8 h-8 rounded-lg bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold text-base flex items-center justify-center transition active:scale-95">
                         +
                     </button>
                 </div>
@@ -746,18 +782,68 @@ function renderDailyMenuModal() {
     const list = document.getElementById('daily-menu-items-list');
     if (!list) return;
 
-    ['teas', 'toppings', 'pastries'].forEach(cat => {
-        const tabBtn = document.getElementById(`tab-daily-${cat}`);
-        if (tabBtn) {
-            if (cat === dailyMenuCategory) {
-                tabBtn.className = 'px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-pink-500 text-white shadow-sm transition';
-            } else {
-                tabBtn.className = 'px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-gray-600 hover:bg-pink-50 transition border border-pink-100';
-            }
-        }
-    });
+    const hasBakery = Boolean(gameState.upgrades && gameState.upgrades.bakery_counter);
+    const activeTeas = (typeof getActiveTeaIds === 'function') ? getActiveTeaIds() : [];
+    const activeToppings = (typeof getActiveToppingIds === 'function') ? getActiveToppingIds() : [];
+    const activePastries = hasBakery && (typeof getActivePastryIds === 'function') ? getActivePastryIds() : [];
+
+    const totalTeas = Object.keys(TEA_MENU || {}).length;
+    const totalToppings = Object.keys(TOPPING_MENU || {}).length;
+    const totalPastries = Object.keys(typeof PASTRY_MENU !== 'undefined' ? PASTRY_MENU : {}).length;
+
+    // Update tab labels with live counts
+    const tabTeas = document.getElementById('tab-daily-teas');
+    if (tabTeas) {
+        tabTeas.innerHTML = `🍵 Trà (${activeTeas.length}/${totalTeas})`;
+        tabTeas.className = (dailyMenuCategory === 'teas')
+            ? 'px-2.5 py-1.5 rounded-xl text-xs font-black bg-pink-500 text-white shadow-sm transition'
+            : 'px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 hover:bg-pink-50 transition border border-pink-100';
+    }
+
+    const tabToppings = document.getElementById('tab-daily-toppings');
+    if (tabToppings) {
+        tabToppings.innerHTML = `🍡 Topping (${activeToppings.length}/${totalToppings})`;
+        tabToppings.className = (dailyMenuCategory === 'toppings')
+            ? 'px-2.5 py-1.5 rounded-xl text-xs font-black bg-emerald-500 text-white shadow-sm transition'
+            : 'px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 hover:bg-emerald-50 transition border border-pink-100';
+    }
+
+    const tabPastries = document.getElementById('tab-daily-pastries');
+    if (tabPastries) {
+        tabPastries.innerHTML = hasBakery ? `🥐 Bánh (${activePastries.length}/${totalPastries})` : '🔒 Bánh (Chưa mở)';
+        tabPastries.className = (dailyMenuCategory === 'pastries')
+            ? 'px-2.5 py-1.5 rounded-xl text-xs font-black bg-amber-500 text-white shadow-sm transition'
+            : 'px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 hover:bg-amber-50 transition border border-pink-100';
+    }
 
     list.innerHTML = '';
+
+    // Action bar: Bulk select/deselect
+    const actionBar = document.createElement('div');
+    actionBar.className = 'flex items-center justify-between pb-2 mb-2 border-b border-pink-100 text-xs';
+    
+    let activeInCurCat = (dailyMenuCategory === 'teas') ? activeTeas.length : (dailyMenuCategory === 'toppings' ? activeToppings.length : activePastries.length);
+    let totalInCurCat = (dailyMenuCategory === 'teas') ? totalTeas : (dailyMenuCategory === 'toppings' ? totalToppings : totalPastries);
+
+    if (dailyMenuCategory === 'pastries' && !hasBakery) {
+        actionBar.innerHTML = `
+            <span class="text-amber-700 font-bold flex items-center gap-1">🔒 Quầy bánh chưa mở khóa</span>
+            <span class="text-[11px] text-gray-400">0/${totalInCurCat} món</span>
+        `;
+    } else {
+        actionBar.innerHTML = `
+            <span class="text-gray-600 font-bold">Đang chọn: <strong class="text-pink-600">${activeInCurCat}/${totalInCurCat} món</strong></span>
+            <div class="flex items-center gap-1.5">
+                <button onclick="if(typeof setCategoryItemsState === 'function') setCategoryItemsState('${dailyMenuCategory}', true)" class="px-2.5 py-1 rounded-lg bg-pink-100 hover:bg-pink-200 text-pink-700 font-extrabold transition text-[11px] shadow-xs cursor-pointer">
+                    ✓ Chọn tất cả
+                </button>
+                <button onclick="if(typeof setCategoryItemsState === 'function') setCategoryItemsState('${dailyMenuCategory}', false)" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold transition text-[11px] cursor-pointer">
+                    ✕ Bỏ chọn hết
+                </button>
+            </div>
+        `;
+    }
+    list.appendChild(actionBar);
 
     if (dailyMenuCategory === 'teas') {
         Object.keys(TEA_MENU).forEach(teaId => {
@@ -766,8 +852,9 @@ function renderDailyMenuModal() {
             const price = (typeof getDrinkCurrentPrice === 'function') ? getDrinkCurrentPrice(teaId) : tea.price;
 
             const card = document.createElement('div');
-            card.className = `p-3 rounded-2xl border-2 flex items-center justify-between transition ${
-                isEnabled ? 'border-pink-300 bg-pink-50/60 shadow-sm' : 'border-gray-200 bg-gray-50 opacity-60'
+            card.onclick = () => toggleDailyItem('teas', teaId);
+            card.className = `p-3 rounded-2xl border-2 flex items-center justify-between transition cursor-pointer select-none ${
+                isEnabled ? 'border-pink-400 bg-pink-50/70 shadow-sm hover:border-pink-500' : 'border-gray-200 bg-gray-50 opacity-60 hover:opacity-85'
             }`;
 
             card.innerHTML = `
@@ -778,7 +865,7 @@ function renderDailyMenuModal() {
                         <div class="text-xs font-semibold text-pink-600">Giá bán: ${formatVND(price)}</div>
                     </div>
                 </div>
-                <button onclick="toggleDailyItem('teas', '${teaId}')" class="px-3 py-1.5 rounded-xl text-xs font-black transition ${
+                <button onclick="event.stopPropagation(); toggleDailyItem('teas', '${teaId}')" class="px-3 py-1.5 rounded-xl text-xs font-black transition pointer-events-auto ${
                     isEnabled ? 'bg-pink-500 text-white hover:bg-pink-600 shadow' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
                 }">
                     ${isEnabled ? '✓ Bán món này' : '✕ Tạm ngưng'}
@@ -793,8 +880,9 @@ function renderDailyMenuModal() {
             const stock = (gameState.inventory && gameState.inventory[topId] !== undefined) ? gameState.inventory[topId] : 0;
 
             const card = document.createElement('div');
-            card.className = `p-3 rounded-2xl border-2 flex items-center justify-between transition ${
-                isEnabled ? 'border-emerald-300 bg-emerald-50/60 shadow-sm' : 'border-gray-200 bg-gray-50 opacity-60'
+            card.onclick = () => toggleDailyItem('toppings', topId);
+            card.className = `p-3 rounded-2xl border-2 flex items-center justify-between transition cursor-pointer select-none ${
+                isEnabled ? 'border-emerald-400 bg-emerald-50/70 shadow-sm hover:border-emerald-500' : 'border-gray-200 bg-gray-50 opacity-60 hover:opacity-85'
             }`;
 
             card.innerHTML = `
@@ -805,7 +893,7 @@ function renderDailyMenuModal() {
                         <div class="text-xs font-semibold text-emerald-600">+${formatVND(top.price)} • Kho: ${stock} phần</div>
                     </div>
                 </div>
-                <button onclick="toggleDailyItem('toppings', '${topId}')" class="px-3 py-1.5 rounded-xl text-xs font-black transition ${
+                <button onclick="event.stopPropagation(); toggleDailyItem('toppings', '${topId}')" class="px-3 py-1.5 rounded-xl text-xs font-black transition pointer-events-auto ${
                     isEnabled ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
                 }">
                     ${isEnabled ? '✓ Bán topping' : '✕ Tạm ngưng'}
@@ -814,15 +902,28 @@ function renderDailyMenuModal() {
             list.appendChild(card);
         });
     } else if (dailyMenuCategory === 'pastries') {
-        if (typeof PASTRY_MENU !== 'undefined') {
+        if (!hasBakery) {
+            const lockNotice = document.createElement('div');
+            lockNotice.className = 'p-5 text-center bg-amber-50/90 rounded-2xl border-2 border-dashed border-amber-300 flex flex-col items-center justify-center my-1';
+            lockNotice.innerHTML = `
+                <div class="text-3xl mb-1.5 animate-bounce">🔒🥐</div>
+                <h4 class="font-black text-gray-800 text-sm mb-1">Chưa Mở Khóa Quầy Bánh Ngọt!</h4>
+                <p class="text-xs text-gray-600 mb-3 max-w-sm">Tiệm hiện chưa có Quầy Bánh Ngọt. Hãy mua <strong>"Quầy Bánh Ngọt 3D"</strong> trong Cửa Hàng Nâng Cấp để có thể mở bán bánh cho khách.</p>
+                <button onclick="closeStartDayModal(); if(typeof openShopModal === 'function') openShopModal();" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs rounded-xl shadow-md transition inline-flex items-center gap-2 cursor-pointer">
+                    🛍️ Mua Quầy Bánh Trong Cửa Hàng (50k)
+                </button>
+            `;
+            list.appendChild(lockNotice);
+        } else if (typeof PASTRY_MENU !== 'undefined') {
             Object.keys(PASTRY_MENU).forEach(pastryId => {
                 const pastry = PASTRY_MENU[pastryId];
-                const isEnabled = (typeof isItemActive === 'function') ? isItemActive('pastries', pastryId) : true;
+                const isEnabled = (typeof isItemActive === 'function') ? isItemActive('pastries', pastryId) : false;
                 const stock = (gameState.inventory && gameState.inventory[pastryId] !== undefined) ? gameState.inventory[pastryId] : 0;
 
                 const card = document.createElement('div');
-                card.className = `p-3 rounded-2xl border-2 flex items-center justify-between transition ${
-                    isEnabled ? 'border-amber-300 bg-amber-50/60 shadow-sm' : 'border-gray-200 bg-gray-50 opacity-60'
+                card.onclick = () => toggleDailyItem('pastries', pastryId);
+                card.className = `p-3 rounded-2xl border-2 flex items-center justify-between transition cursor-pointer select-none ${
+                    isEnabled ? 'border-amber-400 bg-amber-50/70 shadow-sm hover:border-amber-500' : 'border-gray-200 bg-gray-50 opacity-60 hover:opacity-85'
                 }`;
 
                 card.innerHTML = `
@@ -833,7 +934,7 @@ function renderDailyMenuModal() {
                             <div class="text-xs font-semibold text-amber-700">+${formatVND(pastry.price)} • Kho: ${stock} cái</div>
                         </div>
                     </div>
-                    <button onclick="toggleDailyItem('pastries', '${pastryId}')" class="px-3 py-1.5 rounded-xl text-xs font-black transition ${
+                    <button onclick="event.stopPropagation(); toggleDailyItem('pastries', '${pastryId}')" class="px-3 py-1.5 rounded-xl text-xs font-black transition pointer-events-auto ${
                         isEnabled ? 'bg-amber-500 text-white hover:bg-amber-600 shadow' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
                     }">
                         ${isEnabled ? '✓ Bán bánh' : '✕ Tạm ngưng'}
@@ -846,16 +947,21 @@ function renderDailyMenuModal() {
 }
 
 function toggleDailyItem(cat, id) {
-    if (typeof toggleActiveItem === 'function') {
+    if (typeof toggleMenuItemState === 'function') {
+        toggleMenuItemState(cat, id);
+    } else if (typeof toggleActiveItem === 'function') {
         toggleActiveItem(cat, id);
     }
     renderDailyMenuModal();
-    playSoundEffect('click');
 }
 
 function openDailyMenuModal() {
+    if (typeof openStartDayModal === 'function') {
+        openStartDayModal();
+        return;
+    }
     playSoundEffect('bell');
-    const modal = document.getElementById('daily-menu-modal');
+    const modal = document.getElementById('start-day-modal') || document.getElementById('daily-menu-modal');
     if (modal) {
         renderDailyMenuModal();
         modal.classList.remove('hidden');
@@ -864,7 +970,7 @@ function openDailyMenuModal() {
 
 function closeDailyMenuModal() {
     playSoundEffect('click');
-    const modal = document.getElementById('daily-menu-modal');
+    const modal = document.getElementById('start-day-modal') || document.getElementById('daily-menu-modal');
     if (modal) modal.classList.add('hidden');
 }
 
@@ -874,6 +980,338 @@ function confirmDailyMenuAndStartDay() {
         commitStartNewDay();
     }
 }
+
+/* ============================================================================
+ * 2. QUẢN LÝ NỀN GẠCH & ẨN HIỆN NỘI THẤT (DECOR & FLOORING CUSTOMIZER)
+ * ============================================================================ */
+
+let currentDecorTab = 'flooring'; // 'flooring' | 'visibility'
+
+function setDecorCustomizerTab(tab) {
+    currentDecorTab = tab;
+    const btnFloor = document.getElementById('tab-customizer-floor');
+    const btnVis = document.getElementById('tab-customizer-vis');
+
+    if (btnFloor && btnVis) {
+        if (tab === 'flooring') {
+            btnFloor.className = 'px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-pink-500 text-white shadow-sm transition';
+            btnVis.className = 'px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-gray-600 hover:bg-pink-50 transition border border-pink-100';
+        } else {
+            btnFloor.className = 'px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-gray-600 hover:bg-pink-50 transition border border-pink-100';
+            btnVis.className = 'px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-pink-500 text-white shadow-sm transition';
+        }
+    }
+    renderDecorCustomizerModal();
+    playSoundEffect('click');
+}
+
+function renderDecorCustomizerModal() {
+    const list = document.getElementById('decor-customizer-list');
+    const elMoney = document.getElementById('decor-customizer-money');
+    if (elMoney) elMoney.textContent = formatVND(gameState.money);
+    if (!list) return;
+
+    list.innerHTML = '';
+
+    if (currentDecorTab === 'flooring') {
+        // TAB 1: DANH MỤC NỀN GẠCH (FLOORING)
+        if (typeof FLOORING_CATALOG !== 'undefined') {
+            FLOORING_CATALOG.forEach(floor => {
+                const isUnlocked = gameState.flooring && gameState.flooring.unlocked && gameState.flooring.unlocked.includes(floor.id);
+                const isCurrent = gameState.flooring && gameState.flooring.current === floor.id;
+                const canAfford = gameState.money >= floor.price;
+
+                const card = document.createElement('div');
+                card.className = `p-3.5 rounded-2xl border-2 flex items-center justify-between transition ${
+                    isCurrent 
+                        ? 'border-pink-500 bg-pink-50/70 shadow-sm' 
+                        : isUnlocked 
+                            ? 'border-emerald-200 bg-emerald-50/40' 
+                            : 'border-gray-200 bg-white hover:border-pink-200'
+                }`;
+
+                let btnHtml = '';
+                if (isCurrent) {
+                    btnHtml = `
+                        <button disabled class="px-3.5 py-2 rounded-xl text-xs font-black bg-pink-500 text-white shadow flex items-center gap-1 cursor-default">
+                            ✓ Đang sử dụng
+                        </button>
+                    `;
+                } else if (isUnlocked) {
+                    btnHtml = `
+                        <button onclick="selectFlooring('${floor.id}')" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white transition shadow flex items-center gap-1">
+                            🎨 Chọn nền này
+                        </button>
+                    `;
+                } else {
+                    btnHtml = `
+                        <button onclick="buyFlooring('${floor.id}')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold ${
+                            canAfford ? 'bg-pink-500 hover:bg-pink-600 text-white shadow' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        } transition flex items-center gap-1">
+                            🛒 Mua (${formatVND(floor.price)})
+                        </button>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-2xl shadow-inner border border-pink-100" style="background: linear-gradient(135deg, #${floor.colorA.toString(16).padStart(6, '0')}, #${floor.colorB.toString(16).padStart(6, '0')})">
+                            ${floor.icon}
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-bold text-gray-800 text-sm">${floor.name}</h4>
+                                ${isCurrent ? '<span class="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-bold">Hiện tại</span>' : ''}
+                            </div>
+                            <p class="text-xs text-gray-500">${floor.desc}</p>
+                        </div>
+                    </div>
+                    ${btnHtml}
+                `;
+                list.appendChild(card);
+            });
+        }
+    } else {
+        // TAB 2: QUẢN LÝ ẨN / HIỆN ĐỒ NỘI THẤT (DECOR VISIBILITY)
+        if (typeof SHOP_UPGRADES !== 'undefined') {
+            const ownedItems = SHOP_UPGRADES.filter(u => gameState.upgrades && gameState.upgrades[u.id]);
+
+            if (ownedItems.length === 0) {
+                list.innerHTML = `
+                    <div class="col-span-full p-6 text-center text-gray-400">
+                        <span class="text-4xl block mb-2">🛋️</span>
+                        <div class="font-bold text-sm">Bạn chưa sở hữu đồ trang trí hay nội thất nào!</div>
+                        <div class="text-xs mt-1">Hãy ghé "🛍️ Nâng Cấp Quán" để mua đèn Neon, thảm hoa, máy hát đĩa,...</div>
+                    </div>
+                `;
+            } else {
+                ownedItems.forEach(item => {
+                    const isVisible = (gameState.decorVisibility && gameState.decorVisibility[item.id] !== undefined) 
+                        ? gameState.decorVisibility[item.id] 
+                        : true;
+
+                    const card = document.createElement('div');
+                    card.className = `p-3.5 rounded-2xl border-2 flex items-center justify-between transition ${
+                        isVisible ? 'border-pink-300 bg-pink-50/50' : 'border-gray-200 bg-gray-50 opacity-70'
+                    }`;
+
+                    card.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">${item.icon}</span>
+                            <div>
+                                <h4 class="font-bold text-gray-800 text-sm">${item.name}</h4>
+                                <div class="text-xs text-gray-500">${item.category}</div>
+                            </div>
+                        </div>
+                        <button onclick="toggleDecorVisibility('${item.id}')" class="px-3.5 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 ${
+                            isVisible 
+                                ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow' 
+                                : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
+                        }">
+                            ${isVisible ? '👁️ Đang Hiện' : '🚫 Đang Ẩn'}
+                        </button>
+                    `;
+                    list.appendChild(card);
+                });
+            }
+        }
+    }
+}
+
+function openDecorCustomizerModal() {
+    playSoundEffect('bell');
+    const modal = document.getElementById('decor-customizer-modal');
+    if (modal) {
+        renderDecorCustomizerModal();
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeDecorCustomizerModal() {
+    playSoundEffect('click');
+    const modal = document.getElementById('decor-customizer-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+/* ============================================================================
+ * 3. BẮT ĐẦU NGÀY MỚI & THIẾT LẬP TARGET (START OF DAY MODAL)
+ * ============================================================================ */
+
+function selectDailyTargetPreset(type, val) {
+    if (typeof setDailyTarget === 'function') {
+        setDailyTarget(type, val);
+    }
+    const inputAmount = document.getElementById('start-day-target-input');
+    if (inputAmount && type === 'revenue') {
+        inputAmount.value = val;
+    }
+    playSoundEffect('click');
+    renderStartDayModal();
+}
+
+function renderStartDayModal() {
+    const target = gameState.dailyTarget || { type: 'revenue', targetAmount: 100000 };
+    const curTargetVal = target.targetAmount || 100000;
+
+    // Highlight preset buttons
+    const presets = [50000, 100000, 200000, 300000];
+    presets.forEach(p => {
+        const btn = document.getElementById(`target-preset-${p}`);
+        if (btn) {
+            if (target.type === 'revenue' && curTargetVal === p) {
+                btn.className = 'px-3 py-2 rounded-xl text-xs font-black bg-pink-500 text-white shadow transition border border-pink-500';
+            } else {
+                btn.className = 'px-3 py-2 rounded-xl text-xs font-bold bg-white text-gray-700 hover:bg-pink-50 transition border border-pink-200';
+            }
+        }
+    });
+
+    // Cập nhật tồn kho nhanh
+    const stockGrid = document.getElementById('start-day-stock-grid');
+    if (stockGrid && typeof INVENTORY_ITEMS !== 'undefined') {
+        stockGrid.innerHTML = '';
+        const keyItems = ['tea_leaf', 'fresh_milk', 'boba', 'cup_pack', 'croissant'];
+        keyItems.forEach(k => {
+            const item = INVENTORY_ITEMS[k];
+            if (!item) return;
+            const stock = gameState.inventory[k] || 0;
+            const itemBadge = document.createElement('div');
+            itemBadge.className = `p-2 rounded-xl border flex items-center justify-between text-xs font-bold ${
+                stock <= 3 ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-pink-50/60 border-pink-100 text-gray-700'
+            }`;
+            itemBadge.innerHTML = `
+                <span class="flex items-center gap-1.5">
+                    <span>${item.icon}</span> ${item.name}
+                </span>
+                <span class="${stock <= 3 ? 'text-rose-600 font-black' : 'text-emerald-600'}">
+                    ${stock} ${item.unit}
+                </span>
+            `;
+            stockGrid.appendChild(itemBadge);
+        });
+    }
+
+    // Render danh sách món bán
+    renderDailyMenuModal();
+}
+
+function openStartDayModal() {
+    playSoundEffect('bell');
+    const modal = document.getElementById('start-day-modal');
+    if (modal) {
+        renderStartDayModal();
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeStartDayModal() {
+    playSoundEffect('click');
+    const modal = document.getElementById('start-day-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function confirmStartDayAndOpen() {
+    const activeTeas = (typeof getActiveTeaIds === 'function') ? getActiveTeaIds() : [];
+    const hasBakery = Boolean(gameState.upgrades && gameState.upgrades.bakery_counter);
+    const activePastries = hasBakery && (typeof getActivePastryIds === 'function') ? getActivePastryIds() : [];
+
+    if (activeTeas.length === 0 && activePastries.length === 0) {
+        playSoundEffect('error');
+        showToast('⚠️ Quán chưa chọn món nào để bán! Vui lòng chọn ít nhất 1 loại Trà hoặc Bánh Ngọt để mở cửa.');
+        return;
+    }
+
+    closeStartDayModal();
+
+    // Đọc số tiền mục tiêu tùy chỉnh nếu người chơi nhập
+    const inputAmount = document.getElementById('start-day-target-input');
+    if (inputAmount && inputAmount.value) {
+        const val = parseInt(inputAmount.value, 10);
+        if (!isNaN(val) && val > 0) {
+            setDailyTarget('revenue', val);
+        }
+    }
+
+    if (!gameState.dailyTarget) {
+        gameState.dailyTarget = { type: 'revenue', targetAmount: 100000, currentAmount: 0, isReached: false, isDayOpen: true };
+    }
+    gameState.dailyTarget.isDayOpen = true;
+
+    playSoundEffect('bell');
+    showToast(`🚪 Quán Boba Sweet đã chính thức MỞ CỬA Ngày ${gameState.day}! Khách hàng bắt đầu tới gọi món!`);
+
+    if (typeof updateTargetProgressUI === 'function') {
+        updateTargetProgressUI();
+    }
+
+    // Khách đầu tiên bước vào
+    if (gameState.phase === 'WAITING_SPAWN') {
+        setTimeout(() => {
+            if (typeof spawnNextCustomer === 'function') {
+                spawnNextCustomer();
+            }
+        }, 800);
+    }
+}
+
+/* ============================================================================
+ * 4. BÁO CÁO KẾ TOÁN TÀI CHÍNH CUỐI NGÀY (DAILY ACCOUNTING REPORT MODAL)
+ * ============================================================================ */
+
+function renderDailyReportModal() {
+    if (typeof getDailyAccountingSummary !== 'function') return;
+
+    const summary = getDailyAccountingSummary();
+
+    const elDay = document.getElementById('report-day-num');
+    const elRev = document.getElementById('report-revenue');
+    const elCogs = document.getElementById('report-cogs');
+    const elPurchase = document.getElementById('report-purchase');
+    const elWages = document.getElementById('report-wages');
+    const elNet = document.getElementById('report-net-profit');
+    const elCups = document.getElementById('report-cups-sold');
+    const elPastries = document.getElementById('report-pastries-sold');
+    const elTops = document.getElementById('report-toppings-sold');
+    const elRating = document.getElementById('report-rating');
+
+    if (elDay) elDay.textContent = `Ngày ${gameState.day}`;
+    if (elRev) elRev.textContent = `+${formatVND(summary.revenue)}`;
+    if (elCogs) elCogs.textContent = `-${formatVND(summary.cogs)}`;
+    if (elPurchase) elPurchase.textContent = `-${formatVND(summary.purchaseExpenses)}`;
+    if (elWages) elWages.textContent = `-${formatVND(summary.staffWages)}`;
+
+    if (elNet) {
+        elNet.textContent = `${summary.netProfit >= 0 ? '+' : ''}${formatVND(summary.netProfit)}`;
+        elNet.className = `text-lg sm:text-xl font-black ${summary.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+    }
+
+    if (elCups) elCups.textContent = `${summary.cupsSold} ly`;
+    if (elPastries) elPastries.textContent = `${summary.pastriesSold} cái`;
+    if (elTops) elTops.textContent = `${summary.toppingsSold} phần`;
+
+    if (elRating) {
+        const avg = (gameState.ratingCount && gameState.ratingCount > 0)
+            ? (gameState.totalStars / gameState.ratingCount).toFixed(1)
+            : '5.0';
+        elRating.textContent = `${avg} ⭐`;
+    }
+}
+
+function openDailyReportModal() {
+    playSoundEffect('bell');
+    const modal = document.getElementById('daily-report-modal');
+    if (modal) {
+        renderDailyReportModal();
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeDailyReportModal() {
+    playSoundEffect('click');
+    const modal = document.getElementById('daily-report-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
 
 
 
