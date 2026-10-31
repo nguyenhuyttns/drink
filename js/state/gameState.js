@@ -1,0 +1,35 @@
+/* ============================================================================
+ * TRẠNG THÁI TOÀN CỤC CỦA GAME (GLOBAL GAME STATE & UTILS)
+ * Quản lý tài chính, tiến trình ngày, đơn hàng hiện tại và ly trà đang pha.
+ * ============================================================================ */
+
+const gameState = {
+    // Tài chính & Chỉ số tiệm
+    money: 100000,
+    revenue: 0,
+    ordersSold: 0,
+    customersServed: 0,
+    day: 1,
+    soundEnabled: true,
+
+    // Vòng đời lượt khách:
+    // 'WAITING_SPAWN' | 'WALKING_IN' | 'ORDERING' | 'SEALING' | 'AWAITING_PAYMENT' | 'WALKING_OUT'
+    phase: 'WAITING_SPAWN',
+    currentOrder: null,
+
+    // Trạng thái ly trà sữa đang pha trên quầy
+    cup: {
+        teaId: null,
+        toppings: new Set(),
+        isSealed: false
+    }
+};
+
+/**
+ * Định dạng số tiền sang tiền tệ VND (VD: 35.000đ)
+ * @param {number} amount
+ * @returns {string}
+ */
+function formatVND(amount) {
+    return (amount || 0).toLocaleString('vi-VN') + 'đ';
+}

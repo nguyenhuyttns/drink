@@ -1,0 +1,134 @@
+/* ============================================================================
+ * BOBA SWEET 3D - CUSTOM STYLESHEET
+ * Phong cách: Pastel Kawaii, Glassmorphism, Micro-animations
+ * ============================================================================ */
+
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: 'Quicksand', sans-serif;
+    background-color: #fff5f8;
+    user-select: none;
+}
+
+.font-title {
+    font-family: 'Fredoka', sans-serif;
+}
+
+/* 3D Canvas Layer */
+#canvas-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+}
+
+/* UI Overlay Layer */
+.ui-layer {
+    position: relative;
+    z-index: 10;
+    pointer-events: none;
+    width: 100vw;
+    height: 100vh;
+}
+
+.interactive {
+    pointer-events: auto;
+}
+
+/* Cute Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #fce7f3;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #f472b6;
+    border-radius: 10px;
+}
+
+/* Pastel Panels & Glassmorphism */
+.pastel-panel {
+    background: rgba(255, 252, 249, 0.92);
+    backdrop-filter: blur(8px);
+    border: 3px solid #fbcfe8;
+    box-shadow: 0 10px 25px -5px rgba(244, 114, 182, 0.25), 0 4px 10px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Button 3D Press Effects */
+.btn-cute {
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 0 #db2777;
+}
+.btn-cute:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #db2777;
+}
+.btn-cute:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #db2777;
+}
+
+.btn-mint {
+    box-shadow: 0 4px 0 #059669;
+}
+.btn-mint:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #059669;
+}
+.btn-mint:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #059669;
+}
+
+/* Customer 3D Speech Bubble */
+#customer-bubble {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    pointer-events: auto;
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bubble-tail::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 10px 10px 0;
+    border-style: solid;
+    border-color: #fbcfe8 transparent;
+    display: block;
+    width: 0;
+}
+
+/* Keyframe Animations */
+@keyframes floatSlow {
+    0%, 100% {
+        transform: translate(-50%, -100%) translateY(0px);
+    }
+    50% {
+        transform: translate(-50%, -100%) translateY(-6px);
+    }
+}
+.floating-bubble {
+    animation: floatSlow 2.8s ease-in-out infinite;
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+.animate-pop {
+    animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boba Sweet 3D - Quản Lý Tiệm Trà Sữa</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Quicksand & Fredoka -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- 3D Scene Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Floating 3D Speech Bubble attached to Customer -->
+    <div id="customer-bubble" class="hidden z-20 floating-bubble">
+        <div class="bg-white border-3 border-pink-300 rounded-2xl px-4 py-2.5 shadow-lg text-center max-w-[230px] relative bubble-tail" style="border-width: 3px;">
+            <div id="bubble-status" class="text-xs font-bold text-pink-500 uppercase tracking-wider mb-0.5">Khách gọi món</div>
+            <div id="bubble-text" class="text-sm font-bold text-gray-800 leading-snug">Cho mình 1 Trà sữa truyền thống nha!</div>
+        </div>
+    </div>
+
+    <!-- Floating Counter Label -->
+    <div id="counter-label" class="hidden fixed z-10 pointer-events-none transform -translate-x-1/2 -translate-y-full">
+        <span class="bg-pink-500/90 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md whitespace-nowrap">
+            ✨ Nhấn vào quầy để pha chế
+        </span>
+    </div>
+
+    <!-- UI Overlay -->
+    <div class="ui-layer flex flex-col justify-between p-3 sm:p-5">
+
+        <!-- TOP BAR: Shop Stats & Controls -->
+        <div class="flex flex-wrap items-center justify-between gap-2 w-full">
+            <!-- Brand & Day -->
+            <div class="pastel-panel interactive rounded-2xl px-4 py-2 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-pink-400 flex items-center justify-center text-white text-2xl shadow-inner">
+                    🧋
+                </div>
+                <div>
+                    <h1 class="font-title text-lg sm:text-xl text-pink-600 leading-none">Boba Sweet 3D</h1>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <span id="stat-day" class="text-xs font-bold bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full">Ngày 1</span>
+                        <span class="text-xs text-gray-500 hidden sm:inline">Xoay chuột để ngắm tiệm</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Indicators -->
+            <div class="pastel-panel interactive rounded-2xl px-3 sm:px-5 py-2 flex flex-wrap items-center gap-3 sm:gap-6">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">💰</span>
+                    <div>
+                        <div class="text-[11px] font-bold text-gray-400 uppercase">Tiền hiện có</div>
+                        <div id="stat-money" class="text-sm sm:text-base font-extrabold text-emerald-600">100.000đ</div>
+                    </div>
+                </div>
+                <div class="h-7 w-[2px] bg-pink-100 hidden sm:block"></div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📈</span>
+                    <div>
+                        <div class="text-[11px] font-bold text-gray-400 uppercase">Tổng doanh thu</div>
+                        <div id="stat-revenue" class="text-sm sm:text-base font-extrabold text-pink-600">0đ</div>
+                    </div>
+                </div>
+                <div class="h-7 w-[2px] bg-pink-100 hidden sm:block"></div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🧾</span>
+                    <div>
+                        <div class="text-[11px] font-bold text-gray-400 uppercase">Đơn đã bán</div>
+                        <div id="stat-orders" class="text-sm sm:text-base font-extrabold text-amber-600">0</div>
+                    </div>
+                </div>
+                <div class="h-7 w-[2px] bg-pink-100 hidden sm:block"></div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">😊</span>
+                    <div>
+                        <div class="text-[11px] font-bold text-gray-400 uppercase">Khách phục vụ</div>
+                        <div id="stat-customers" class="text-sm sm:text-base font-extrabold text-purple-600">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Management Action Buttons -->
+            <div class="flex items-center gap-2 interactive">
+                <button id="btn-sound" onclick="toggleSound()" class="pastel-panel hover:bg-pink-50 text-pink-600 font-bold p-2.5 rounded-xl transition" title="Bật/Tắt âm thanh">
+                    🔊
+                </button>
+                <button onclick="focusCounterCamera()" class="pastel-panel hover:bg-pink-50 text-pink-600 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-1">
+                    🎥 Góc Pha Chế
+                </button>
+                <button onclick="resetCameraView()" class="pastel-panel hover:bg-pink-50 text-gray-600 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-1">
+                    🏠 Toàn Cảnh
+                </button>
+                <button onclick="startNewDay()" class="bg-amber-400 hover:bg-amber-500 text-white font-bold px-3 py-2 rounded-xl text-xs sm:text-sm shadow transition">
+                    ☀️ Ngày mới
+                </button>
+                <button onclick="openResetModal()" class="bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition">
+                    🔄 Đặt lại
+                </button>
+            </div>
+        </div>
+
+        <!-- MIDDLE CONTENT: Left Order Ticket & Right Crafting Station -->
+        <div class="flex-1 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 my-3 overflow-hidden">
+
+            <!-- LEFT: Current Order Panel -->
+            <div class="pastel-panel interactive rounded-3xl p-4 w-full md:w-80 transition-all">
+                <div class="flex items-center justify-between border-b-2 border-pink-100 pb-2.5 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">📋</span>
+                        <h2 class="font-title text-base text-pink-600">Đơn Hàng Hiện Tại</h2>
+                    </div>
+                    <span id="order-badge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                        Đang đợi khách...
+                    </span>
+                </div>
+
+                <!-- Empty state when waiting for customer -->
+                <div id="order-empty" class="py-6 text-center text-gray-400">
+                    <div class="text-3xl mb-1 animate-bounce">🚶‍♂️</div>
+                    <p class="text-sm font-semibold">Khách hàng đang bước vào quầy...</p>
+                </div>
+
+                <!-- Active Order Details -->
+                <div id="order-content" class="hidden space-y-3">
+                    <div class="flex items-center gap-3 bg-pink-50/80 p-2.5 rounded-2xl border border-pink-200">
+                        <div id="customer-avatar" class="w-11 h-11 rounded-xl bg-pink-200 flex items-center justify-center text-2xl shadow-sm">
+                            👧
+                        </div>
+                        <div>
+                            <div id="customer-name" class="font-bold text-gray-800 text-sm">Bé Dâu Tây</div>
+                            <div class="text-xs text-pink-500 font-semibold">Khách tại quầy #1</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-3 border border-pink-100 space-y-2 shadow-inner">
+                        <div>
+                            <div class="text-[11px] font-bold text-gray-400 uppercase">Món đồ uống yêu cầu:</div>
+                            <div id="order-tea-name" class="text-base font-extrabold text-gray-800 flex items-center justify-between mt-0.5">
+                                <span>Trà sữa truyền thống</span>
+                                <span class="text-xs font-bold text-pink-500">25.000đ</span>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-dashed border-pink-100 pt-2">
+                            <div class="text-[11px] font-bold text-gray-400 uppercase mb-1">Topping đi kèm:</div>
+                            <ul id="order-toppings-list" class="space-y-1 text-xs font-bold text-gray-700">
+                                <!-- Filled dynamically -->
+                            </ul>
+                        </div>
+
+                        <div class="border-t border-pink-200 pt-2 flex items-center justify-between">
+                            <span class="text-xs font-bold text-gray-500">Tổng giá đơn:</span>
+                            <span id="order-total-price" class="text-base font-extrabold text-emerald-600">35.000đ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Barista Crafting Station -->
+            <div id="crafting-panel" class="pastel-panel interactive rounded-3xl p-4 w-full md:w-96 max-h-full overflow-y-auto transition-all">
+                <div class="flex items-center justify-between border-b-2 border-pink-100 pb-2.5 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">🧋</span>
+                        <div>
+                            <h2 class="font-title text-base text-pink-600 leading-none">Quầy Pha Chế 3D</h2>
+                            <span class="text-[11px] text-gray-400 font-semibold">Nhìn ly 3D trên bàn để xem hiệu ứng</span>
+                        </div>
+                    </div>
+                    <button onclick="clearCurrentCup(true)" class="text-xs font-bold bg-rose-100 hover:bg-rose-200 text-rose-600 px-2.5 py-1.5 rounded-xl transition flex items-center gap-1" title="Đổ bỏ ly hiện tại và làm lại">
+                        🗑️ Làm lại ly
+                    </button>
+                </div>
+
+                <!-- Step 1: Select Base Tea -->
+                <div class="mb-3">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-extrabold text-gray-600 uppercase tracking-wider">1. Chọn Cốt Trà (Bắt buộc)</span>
+                        <span id="selected-tea-label" class="text-xs font-bold text-pink-500">Chưa chọn</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="selectBaseTea('classic')" id="btn-tea-classic" class="tea-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                            <span class="w-6 h-6 rounded-full flex-shrink-0 border border-amber-700/20 shadow-inner" style="background-color: #d2a679;"></span>
+                            <div class="overflow-hidden">
+                                <div class="text-xs font-bold text-gray-800 truncate">Truyền thống</div>
+                                <div class="text-[11px] font-bold text-pink-500">25.000đ</div>
+                            </div>
+                        </button>
+
+                        <button onclick="selectBaseTea('matcha')" id="btn-tea-matcha" class="tea-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                            <span class="w-6 h-6 rounded-full flex-shrink-0 border border-emerald-700/20 shadow-inner" style="background-color: #88c999;"></span>
+                            <div class="overflow-hidden">
+                                <div class="text-xs font-bold text-gray-800 truncate">Trà sữa Matcha</div>
+                                <div class="text-[11px] font-bold text-pink-500">30.000đ</div>
+                            </div>
+                        </button>
+
+                        <button onclick="selectBaseTea('choco')" id="btn-tea-choco" class="tea-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                            <span class="w-6 h-6 rounded-full flex-shrink-0 border border-amber-900/20 shadow-inner" style="background-color: #6b4423;"></span>
+                            <div class="overflow-hidden">
+                                <div class="text-xs font-bold text-gray-800 truncate">Trà sữa Socola</div>
+                                <div class="text-[11px] font-bold text-pink-500">30.000đ</div>
+                            </div>
+                        </button>
+
+                        <button onclick="selectBaseTea('peach')" id="btn-tea-peach" class="tea-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                            <span class="w-6 h-6 rounded-full flex-shrink-0 border border-orange-500/20 shadow-inner" style="background-color: #ff9e5e;"></span>
+                            <div class="overflow-hidden">
+                                <div class="text-xs font-bold text-gray-800 truncate">Trà Đào</div>
+                                <div class="text-[11px] font-bold text-pink-500">25.000đ</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Select Toppings -->
+                <div class="mb-3">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-extrabold text-gray-600 uppercase tracking-wider">2. Thêm Topping (Có thể chọn nhiều)</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="toggleTopping('boba')" id="btn-top-boba" class="top-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                            <span class="w-6 h-6 rounded-full bg-stone-900 text-white flex items-center justify-center text-xs flex-shrink-0">⚫</span>
+                            <div class="overflow-hidden">
+                                <div class="text-xs font-bold text-gray-800 truncate">Trân châu đen</div>
+                                <div class="text-[11px] font-bold text-emerald-600">+5.000đ</div>
+                            </div>
+                        </button>
+
+                        <button onclick="toggleTopping('jelly')" id="btn-top-jelly" class="top-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                            <span class="w-6 h-6 rounded-lg bg-pink-200 flex items-center justify-center text-xs flex-shrink-0">🍬</span>
+                            <div class="overflow-hidden">
+                                <div class="text-xs font-bold text-gray-800 truncate">Thạch trái cây</div>
+                                <div class="text-[11px] font-bold text-emerald-600">+5.000đ</div>
+                            </div>
+                        </button>
+
+                        <button onclick="toggleTopping('pudding')" id="btn-top-pudding" class="top-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                            <span class="w-6 h-6 rounded-lg bg-amber-300 flex items-center justify-center text-xs flex-shrink-0">🍮</span>
+                            <div class="overflow-hidden">
+                                <div class="text-xs font-bold text-gray-800 truncate">Pudding trứng</div>
+                                <div class="text-[11px] font-bold text-emerald-600">+7.000đ</div>
+                            </div>
+                        </button>
+
+                        <button onclick="toggleTopping('cheese')" id="btn-top-cheese" class="top-btn flex items-center gap-2 p-2 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 transition text-left">
+                            <span class="w-6 h-6 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-xs flex-shrink-0">🧀</span>
+                            <div class="overflow-hidden">
+                                <div class="text-xs font-bold text-gray-800 truncate">Kem Cheese</div>
+                                <div class="text-[11px] font-bold text-emerald-600">+10.000đ</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Current Cup Status Summary -->
+                <div class="bg-pink-50/90 rounded-2xl p-2.5 border border-pink-200 mb-3 flex items-center justify-between">
+                    <div>
+                        <div class="text-[11px] font-bold text-gray-500">Ly đang pha trên quầy:</div>
+                        <div id="cup-summary-text" class="text-xs font-extrabold text-pink-700">Ly rỗng (Hãy chọn cốt trà)</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[11px] font-bold text-gray-500">Thành tiền:</div>
+                        <div id="cup-price-text" class="text-sm font-extrabold text-emerald-600">0đ</div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Seal & Serve Button -->
+                <button id="btn-finish-drink" onclick="finishAndServeDrink()" class="btn-cute w-full bg-pink-500 hover:bg-pink-600 text-white font-title text-base py-3 rounded-2xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span>✨ Đóng Nắp & Giao Đồ Uống</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- BOTTOM BAR: Status Notification Toast -->
+        <div class="flex justify-center pointer-events-none">
+            <div id="toast-banner" class="pastel-panel px-5 py-2 rounded-full text-xs sm:text-sm font-bold text-pink-700 shadow-md transition-all duration-300">
+                🌸 Chào mừng bạn đến với tiệm trà sữa Boba Sweet 3D! Hãy pha chế món đầu tiên nhé!
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: INVOICE & PAYMENT (Hóa đơn thu tiền) -->
+    <div id="invoice-modal" class="hidden fixed inset-0 z-30 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+        <div class="pastel-panel interactive rounded-3xl p-6 w-full max-w-sm animate-pop relative">
+            <div class="text-center border-b-2 border-dashed border-pink-200 pb-3 mb-4">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl mx-auto mb-2 shadow-sm">
+                    🧾
+                </div>
+                <h3 class="font-title text-xl text-pink-600">HÓA ĐƠN THANH TOÁN</h3>
+                <p class="text-xs font-semibold text-gray-500">Khách hàng rất hài lòng với ly nước!</p>
+            </div>
+
+            <div class="space-y-2.5 text-sm mb-5 bg-white p-4 rounded-2xl border border-pink-100 shadow-inner">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-500 font-semibold">Khách hàng:</span>
+                    <span id="bill-customer" class="font-bold text-gray-800">Bé Dâu Tây</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span id="bill-tea-name" class="font-bold text-gray-800">Trà sữa truyền thống</span>
+                    <span id="bill-tea-price" class="font-bold text-gray-700">25.000đ</span>
+                </div>
+                <div class="border-t border-dashed border-gray-200 pt-2">
+                    <div class="text-xs font-bold text-gray-400 uppercase mb-1">Topping đã thêm:</div>
+                    <div id="bill-toppings" class="space-y-1 text-xs font-semibold text-gray-600">
+                        <!-- Dynamic -->
+                    </div>
+                </div>
+                <div class="border-t-2 border-pink-200 pt-2.5 flex justify-between items-center text-base">
+                    <span class="font-extrabold text-gray-700">TỔNG CỘNG:</span>
+                    <span id="bill-total" class="font-extrabold text-emerald-600 text-lg">35.000đ</span>
+                </div>
+            </div>
+
+            <button onclick="collectPayment()" class="btn-mint w-full bg-emerald-500 hover:bg-emerald-600 text-white font-title text-lg py-3 rounded-2xl flex items-center justify-center gap-2">
+                <span>💵 Thu Tiền (+<span id="btn-bill-amount">35.000đ</span>)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: RESET CONFIRMATION -->
+    <div id="reset-modal" class="hidden fixed inset-0 z-30 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+        <div class="pastel-panel interactive rounded-3xl p-6 w-full max-w-sm animate-pop text-center">
+            <div class="text-4xl mb-2">🔄</div>
+            <h3 class="font-title text-xl text-pink-600 mb-1">Đặt Lại Cửa Hàng?</h3>
+            <p class="text-xs sm:text-sm text-gray-600 font-semibold mb-5">
+                Số tiền hiện có sẽ quay về <strong>100.000đ</strong>, tổng doanh thu và số đơn hàng sẽ đặt lại từ Ngày 1.
+            </p>
+            <div class="flex gap-3">
+                <button onclick="closeResetModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2.5 rounded-xl text-sm transition">
+                    Hủy bỏ
+                </button>
+                <button onclick="confirmResetGame()" class="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold py-2.5 rounded-xl text-sm shadow transition">
+                    Đồng ý đặt lại
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODULAR JAVASCRIPT ARCHITECTURE -->
+    <!-- 1. Config & Settings -->
+    <script src="js/config/menu.js"></script>
+    <script src="js/config/customers.js"></script>
+
+    <!-- 2. State & Utils -->
+    <script src="js/state/gameState.js"></script>
+
+    <!-- 3. Audio System -->
+    <script src="js/audio/audioManager.js"></script>
+
+    <!-- 4. 3D Scene & Models -->
+    <script src="js/scene/sceneManager.js"></script>
+    <script src="js/scene/environment.js"></script>
+    <script src="js/scene/equipment.js"></script>
+    <script src="js/scene/cup3D.js"></script>
+    <script src="js/scene/characters.js"></script>
+
+    <!-- 5. UI Manager -->
+    <script src="js/ui/uiManager.js"></script>
+
+    <!-- 6. Game Logic & Services -->
+    <script src="js/game/cameraController.js"></script>
+    <script src="js/game/orderService.js"></script>
+    <script src="js/game/craftingService.js"></script>
+
+    <!-- 7. Main Entry Point -->
+    <script src="js/main.js"></script>
+
+</body>
+</html>
