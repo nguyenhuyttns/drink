@@ -10,8 +10,8 @@ const mouse = new THREE.Vector2();
 function focusCounterCamera() {
     playSoundEffect('click');
     cameraTargetTween = {
-        camPos: new THREE.Vector3(0.4, 3.3, 2.5),
-        lookAt: new THREE.Vector3(-0.25, 1.75, -0.35),
+        camPos: new THREE.Vector3(3.2, 3.8, 4.4), // Zoom cận cảnh quầy theo trục chéo
+        lookAt: new THREE.Vector3(-0.25, 1.45, -0.35),
         progress: 0
     };
 
@@ -26,8 +26,8 @@ function focusCounterCamera() {
 function resetCameraView() {
     playSoundEffect('click');
     cameraTargetTween = {
-        camPos: new THREE.Vector3(6.5, 7.2, 8.5),
-        lookAt: new THREE.Vector3(0, 1.2, 0.5),
+        camPos: new THREE.Vector3(6.8, 7.5, 8.8), // Toàn cảnh tiệm theo trục chéo
+        lookAt: new THREE.Vector3(-0.2, 1.2, 0.2),
         progress: 0
     };
 }

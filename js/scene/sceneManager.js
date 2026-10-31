@@ -14,9 +14,9 @@ function init3DScene() {
     scene.background = new THREE.Color(0xfff0f5);
     scene.fog = new THREE.Fog(0xfff0f5, 18, 38);
 
-    // 2. Camera
-    camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(6.5, 7.2, 8.5);
+    // 2. Camera - Góc nhìn chéo Isometric cố định đẹp mắt
+    camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(6.8, 7.5, 8.8);
 
     // 3. Renderer với PCF Soft Shadow
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -26,14 +26,16 @@ function init3DScene() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
-    // 4. OrbitControls
+    // 4. Controls: Khóa xoay 360 độ, chỉ cho phép zoom ra/vào để tối ưu hiệu năng
     controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 1.2, 0.5);
+    controls.target.set(-0.2, 1.2, 0.2);
+    controls.enableRotate = false; // KHÔNG xoay 360 độ
+    controls.enableZoom = true;    // Cho phép cuộn chuột zoom phóng to / thu nhỏ
+    controls.enablePan = false;    // Giữ tâm nhìn ổn định trên quầy
+    controls.minDistance = 4.2;    // Giới hạn zoom gần
+    controls.maxDistance = 15.5;   // Giới hạn zoom xa
     controls.enableDamping = true;
-    controls.dampingFactor = 0.06;
-    controls.maxPolarAngle = Math.PI / 2 - 0.04; // Ngăn camera chui xuống dưới sàn
-    controls.minDistance = 3.5;
-    controls.maxDistance = 18;
+    controls.dampingFactor = 0.08;
     controls.update();
 
     // 5. Hệ thống Chiếu Sáng (Lighting)

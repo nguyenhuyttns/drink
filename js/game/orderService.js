@@ -38,9 +38,12 @@ function spawnNextCustomer() {
 
     // Cập nhật ngoại hình nhân vật 3D
     if (customerGroup) {
-        customerGroup.userData.bodyMesh.material.color.setHex(order.customer.shirtColor);
-        customerGroup.userData.hairMesh.material.color.setHex(order.customer.hairColor);
-        customerGroup.userData.miniCupGroup.visible = false;
+        if (typeof updateCustomerProfile3D === 'function') {
+            updateCustomerProfile3D(order.customer);
+        }
+        if (customerGroup.userData && customerGroup.userData.miniCupGroup) {
+            customerGroup.userData.miniCupGroup.visible = false;
+        }
 
         // Đặt ở vị trí trước cửa
         customerGroup.position.set(-5.8, 0, 2.2);

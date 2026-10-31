@@ -36,6 +36,10 @@ function updateOrderTicketUI() {
 
         document.getElementById('customer-avatar').textContent = order.customer.avatar;
         document.getElementById('customer-name').textContent = order.customer.name;
+        const elDesc = document.getElementById('customer-desc');
+        if (elDesc) {
+            elDesc.textContent = order.customer.ageText || 'Khách tại quầy #1';
+        }
         document.getElementById('order-tea-name').innerHTML = `
             <span>${tea.name}</span>
             <span class="text-xs font-bold text-pink-500">${formatVND(tea.price)}</span>
