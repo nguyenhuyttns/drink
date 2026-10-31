@@ -201,7 +201,7 @@ function collectPayment() {
         showSpeechBubble('💖 Cảm ơn tiệm!', 'Trà sữa thơm lắm, mình mang về nhé! 🥡', false);
 
         if (customerHandCup) {
-            const teaColor = TEA_MENU[order.teaId].color;
+            const teaColor = (order.teaId && TEA_MENU[order.teaId]) ? TEA_MENU[order.teaId].color : 0xf59e0b;
             customerHandCup.material.color.setHex(teaColor);
         }
         if (customerGroup && customerGroup.userData.miniCupGroup) {

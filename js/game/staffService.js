@@ -229,32 +229,36 @@ function updateStaffAI(dt, elapsed, targetScene) {
                 assistantAI.stepTimer -= dt;
 
                 if (assistantAI.stepTimer <= 0) {
-                    // Bước 1: Rót cốt trà nếu chưa rót
-                    if (!gameState.cup.teaId) {
+                    // Bước 1: Rót cốt trà (CHỈ KHI ĐƠN CÓ YÊU CẦU TRÀ)
+                    if (order.teaId && !gameState.cup.teaId) {
                         assistantAI.isAnimatingArm = true;
                         assistantAI.armTimer = 0.5;
                         assistantAI.stepTimer = 0.7;
 
                         if (typeof selectBaseTea === 'function') {
                             selectBaseTea(order.teaId);
-                            showToast(`🐻 Bé Gấu: Tự động rót ${TEA_MENU[order.teaId].name}!`);
+                            const tName = (TEA_MENU[order.teaId]) ? TEA_MENU[order.teaId].name : 'trà';
+                            showToast(`🐻 Bé Gấu: Tự động rót ${tName}!`);
                         }
                         return;
                     }
 
-                    // Bước 2: Thêm từng topping còn thiếu
-                    const missingToppings = order.toppings.filter(t => !gameState.cup.toppings.has(t));
-                    if (missingToppings.length > 0) {
-                        const nextTop = missingToppings[0];
-                        assistantAI.isAnimatingArm = true;
-                        assistantAI.armTimer = 0.4;
-                        assistantAI.stepTimer = 0.6;
+                    // Bước 2: Thêm từng topping còn thiếu (CHỈ KHI ĐƠN CÓ TOPPING)
+                    if (order.toppings && order.toppings.length > 0) {
+                        const missingToppings = order.toppings.filter(t => !gameState.cup.toppings.has(t));
+                        if (missingToppings.length > 0) {
+                            const nextTop = missingToppings[0];
+                            assistantAI.isAnimatingArm = true;
+                            assistantAI.armTimer = 0.4;
+                            assistantAI.stepTimer = 0.6;
 
-                        if (typeof toggleTopping === 'function') {
-                            toggleTopping(nextTop);
-                            showToast(`🐻 Bé Gấu: Thêm topping ${TOPPING_MENU[nextTop].name}!`);
+                            if (typeof toggleTopping === 'function') {
+                                toggleTopping(nextTop);
+                                const topName = TOPPING_MENU[nextTop] ? TOPPING_MENU[nextTop].name : 'topping';
+                                showToast(`🐻 Bé Gấu: Thêm topping ${topName}!`);
+                            }
+                            return;
                         }
-                        return;
                     }
 
                     // Bước 2.5: Lấy bánh ngọt nếu khách có gọi kèm
@@ -272,12 +276,12 @@ function updateStaffAI(dt, elapsed, targetScene) {
                         }
                     }
 
-                    // Bước 3: Dập nắp hoàn tất đơn hàng
+                    // Bước 3: Hoàn tất & phục vụ đơn hàng
+                    const teaReady = !order.teaId || (gameState.cup.teaId === order.teaId);
+                    const toppingsReady = !order.toppings || order.toppings.every(t => gameState.cup.toppings.has(t));
                     const pastryReady = !order.pastryId || (gameState.cup.pastryId === order.pastryId);
-                    if (gameState.cup.teaId === order.teaId && 
-                        missingToppings.length === 0 && 
-                        pastryReady &&
-                        !gameState.cup.isSealed) {
+
+                    if (teaReady && toppingsReady && pastryReady && !gameState.cup.isSealed) {
                         assistantAI.isAnimatingArm = true;
                         assistantAI.armTimer = 0.6;
                         assistantAI.stepTimer = 8.0; // Đợi đơn khách tiếp theo
@@ -314,6 +318,20 @@ function updateStaffAI(dt, elapsed, targetScene) {
                     selectPastry(order.pastryId);
                     const pName = (typeof PASTRY_MENU !== 'undefined' && PASTRY_MENU[order.pastryId]) ? PASTRY_MENU[order.pastryId].name : 'Bánh ngọt';
                     showToast(`🐱 Bé Mèo: Đã chuẩn bị bánh ${pName} thơm phức cho khách! 🥐`);
+                }
+            } else if (!order.teaId && gameState.cup.pastryId === order.pastryId) {
+                // Đơn hàng CHỈ CÓ BÁNH: Bé Mèo tự động phục vụ bánh cho khách luôn sau 1 giây!
+                if (!assistantAI.pastryChefServed) {
+                    assistantAI.pastryChefServed = true;
+                    setTimeout(() => {
+                        if (gameState.phase === 'ORDERING' && gameState.currentOrder && !gameState.currentOrder.teaId) {
+                            showToast(`🐱 Bé Mèo: Đã trao đĩa bánh thơm cho ${gameState.currentOrder.customer.name}! ✨`);
+                            if (typeof finishAndServeDrink === 'function') {
+                                finishAndServeDrink();
+                            }
+                        }
+                        assistantAI.pastryChefServed = false;
+                    }, 1000);
                 }
             }
         } else if (pastryChefLimbs && pastryChefLimbs.rightArm) {

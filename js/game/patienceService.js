@@ -59,6 +59,48 @@ function updatePatienceTimer(dt) {
     }
 
     updatePatienceUI();
+
+    // HẾT THỜI GIAN CHỜ ĐỢI: Khách tức giận bỏ về, giải phóng quầy để game tiếp tục chạy
+    if (patienceState.timeLeft <= 0) {
+        handlePatienceTimeout();
+    }
+}
+
+function handlePatienceTimeout() {
+    if (!patienceState.active || gameState.phase !== 'ORDERING') return;
+
+    stopPatienceTimer();
+
+    // Khách thất vọng bỏ đi -> Ghi nhận 1 sao làm giảm điểm trung bình
+    gameState.totalStars = (gameState.totalStars || 0) + 1;
+    gameState.ratingCount = (gameState.ratingCount || 0) + 1;
+    if (typeof updateTopStatsUI === 'function') updateTopStatsUI();
+
+    playSoundEffect('error');
+
+    if (typeof customerAnim !== 'undefined' && customerAnim) {
+        customerAnim.shakeTimer = 1.0;
+    }
+
+    if (typeof showSpeechBubble === 'function') {
+        showSpeechBubble('😤 Đợi lâu quá!', 'Quán phục vụ chậm quá, mình đi về đây!', true);
+    }
+    if (typeof showToast === 'function') {
+        showToast('💔 Khách hàng hết kiên nhẫn và bỏ về! Quầy đã được dọn sạch để đón khách mới.');
+    }
+
+    if (typeof clearCurrentCup === 'function') {
+        clearCurrentCup(false);
+    }
+
+    gameState.phase = 'WALKING_OUT';
+    if (typeof customerAnim !== 'undefined' && customerAnim) {
+        customerAnim.targetPos.set(-6.2, 0, 2.2);
+        customerAnim.active = true;
+    }
+
+    if (typeof updateOrderTicketUI === 'function') updateOrderTicketUI();
+    if (typeof updateCraftingUI === 'function') updateCraftingUI();
 }
 
 function updatePatienceUI() {

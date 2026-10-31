@@ -67,7 +67,45 @@ function setupPointerInteraction(targetRenderer, targetCamera, counterHitboxMesh
             }
         }
 
-        // 3. Tương tác nhấn vào Quầy Pha Chế
+        // 3. Tương tác nhấn vào Quầy Bánh Ngọt 3D
+        if (typeof upgradeMeshes !== 'undefined' && upgradeMeshes.bakeryCounterGroup && upgradeMeshes.bakeryCounterGroup.visible) {
+            const bakeryHits = raycaster.intersectObject(upgradeMeshes.bakeryCounterGroup, true);
+            if (bakeryHits.length > 0) {
+                if (gameState.phase === 'ORDERING' && gameState.currentOrder && gameState.currentOrder.pastryId) {
+                    if (typeof quickPrepareAndServePastry === 'function') {
+                        quickPrepareAndServePastry(gameState.currentOrder.pastryId);
+                        showToast('🥐 Đã chuẩn bị & phục vụ bánh ngay cho khách tại Quầy Bánh!');
+                        return;
+                    }
+                }
+                if (typeof openCraftingPanel === 'function') {
+                    openCraftingPanel();
+                }
+                showToast('🥐 Bạn vừa nhấn vào Quầy Bánh Ngọt! Bảng chọn bánh đã mở ra.');
+                return;
+            }
+        }
+
+        // 4. Tương tác nhấn vào Khách Hàng đang chờ tại quầy
+        if (typeof customerGroup !== 'undefined' && customerGroup && customerGroup.visible) {
+            const custHits = raycaster.intersectObject(customerGroup, true);
+            if (custHits.length > 0 && gameState.phase === 'ORDERING' && gameState.currentOrder) {
+                if (!gameState.currentOrder.teaId && gameState.currentOrder.pastryId) {
+                    if (typeof quickPrepareAndServePastry === 'function') {
+                        quickPrepareAndServePastry(gameState.currentOrder.pastryId);
+                        showToast('🥐 Đã phục vụ bánh cho khách hàng!');
+                        return;
+                    }
+                }
+                if (typeof openCraftingPanel === 'function') {
+                    openCraftingPanel();
+                }
+                focusCounterCamera();
+                return;
+            }
+        }
+
+        // 5. Tương tác nhấn vào Quầy Pha Chế Chính
         if (counterHitboxMesh) {
             const intersects = raycaster.intersectObject(counterHitboxMesh, true);
             if (intersects.length > 0) {

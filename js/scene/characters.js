@@ -860,9 +860,10 @@ function startCustomerDineIn(order, targetScene) {
 
     // Ly trà mini trên tay
     const miniCup = new THREE.Group();
+    const teaColor = (order.teaId && TEA_MENU[order.teaId]) ? TEA_MENU[order.teaId].color : 0xf59e0b;
     const cBody = new THREE.Mesh(
         new THREE.CylinderGeometry(0.09, 0.065, 0.24, 14),
-        new THREE.MeshLambertMaterial({ color: TEA_MENU[order.teaId].color })
+        new THREE.MeshLambertMaterial({ color: teaColor })
     );
     const cLid = new THREE.Mesh(new THREE.CylinderGeometry(0.098, 0.098, 0.03, 14), new THREE.MeshLambertMaterial({ color: 0xffffff }));
     cLid.position.y = 0.12;
@@ -940,7 +941,8 @@ function animateSeatedCustomers(dt, elapsed, targetScene) {
                 if (sc.limbs.rightArm) sc.limbs.rightArm.rotation.x = -0.65;
 
                 // Đặt ly trà sữa lên bàn
-                sc.tableCup = createTableCup(TEA_MENU[sc.order.teaId].color);
+                const tableTeaColor = (sc.order.teaId && TEA_MENU[sc.order.teaId]) ? TEA_MENU[sc.order.teaId].color : 0xf59e0b;
+                sc.tableCup = createTableCup(tableTeaColor);
                 sc.tableCup.position.copy(sc.seat.cupPos);
                 targetScene.add(sc.tableCup);
 

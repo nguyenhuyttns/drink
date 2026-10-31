@@ -82,12 +82,22 @@ function updateOrderTicketUI() {
         if (elPastryRow) {
             if (order.pastryId && typeof PASTRY_MENU !== 'undefined' && PASTRY_MENU[order.pastryId]) {
                 const p = PASTRY_MENU[order.pastryId];
+                const isOnlyPastry = !order.teaId;
+                const isReadyOnPlate = gameState.cup.pastryId === order.pastryId;
+
                 elPastryRow.innerHTML = `
-                    <div class="flex justify-between items-center bg-amber-50 px-2 py-1.5 rounded-lg border border-amber-200">
-                        <span class="flex items-center gap-1.5 text-xs font-bold text-gray-800">
-                            <span class="text-base">${p.icon}</span> Bánh: ${p.name}
-                        </span>
-                        <span class="text-xs font-extrabold text-amber-700">+${formatVND(p.price)}</span>
+                    <div class="bg-amber-50 p-2 rounded-xl border border-amber-200">
+                        <div class="flex justify-between items-center ${isOnlyPastry ? 'mb-1.5' : ''}">
+                            <span class="flex items-center gap-1.5 text-xs font-bold text-gray-800">
+                                <span class="text-base">${p.icon}</span> Bánh: ${p.name}
+                            </span>
+                            <span class="text-xs font-extrabold text-amber-700">+${formatVND(p.price)}</span>
+                        </div>
+                        ${isOnlyPastry ? `
+                            <button onclick="quickPrepareAndServePastry('${order.pastryId}')" class="w-full py-1.5 px-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-[11px] rounded-lg shadow-sm transition flex items-center justify-center gap-1 cursor-pointer active:scale-95 animate-pulse">
+                                🥐 ${isReadyOnPlate ? '✓ Trao đĩa bánh phục vụ khách ngay' : '👉 Lấy bánh & Phục vụ ngay'}
+                            </button>
+                        ` : ''}
                     </div>
                 `;
                 elPastryRow.classList.remove('hidden');
@@ -224,12 +234,44 @@ function updateCraftingUI() {
         elPrice.textContent = formatVND(cupPrice);
     }
 
-    // 4. Trạng thái nút hoàn thành ly
+    // 4. Trạng thái nút hoàn thành ly / phục vụ bánh
     const finishBtn = document.getElementById('btn-finish-drink');
     if (finishBtn) {
-        finishBtn.disabled = !(gameState.phase === 'ORDERING' && gameState.cup.teaId && !gameState.cup.isSealed);
+        const order = gameState.currentOrder;
+        const isOrdering = gameState.phase === 'ORDERING';
+
+        if (order && !order.teaId && order.pastryId) {
+            // Đơn hàng CHỈ MUA BÁNH NGỌT: Nút phục vụ bánh
+            const hasPastryOnPlate = Boolean(gameState.cup.pastryId);
+            finishBtn.disabled = !(isOrdering && hasPastryOnPlate);
+            finishBtn.innerHTML = `<span>🥐 Phục Vụ Bánh Cho Khách</span>`;
+            finishBtn.className = (isOrdering && hasPastryOnPlate)
+                ? 'btn-mint w-full bg-amber-500 hover:bg-amber-600 text-white font-title text-base sm:text-lg py-3 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition cursor-pointer'
+                : 'btn-mint w-full bg-gray-200 text-gray-400 font-title text-base sm:text-lg py-3 rounded-2xl flex items-center justify-center gap-2 cursor-not-allowed';
+        } else {
+            // Đơn có nước (hoặc nước + bánh)
+            const canFinish = isOrdering && gameState.cup.teaId && !gameState.cup.isSealed;
+            finishBtn.disabled = !canFinish;
+            finishBtn.innerHTML = `<span>✨ Dập Nắp Ly & Phục Vụ</span>`;
+            finishBtn.className = canFinish
+                ? 'btn-mint w-full bg-pink-500 hover:bg-pink-600 text-white font-title text-base sm:text-lg py-3 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition cursor-pointer'
+                : 'btn-mint w-full bg-gray-200 text-gray-400 font-title text-base sm:text-lg py-3 rounded-2xl flex items-center justify-center gap-2 cursor-not-allowed';
+        }
     }
 }
+
+function quickPrepareAndServePastry(pastryId) {
+    if (gameState.phase !== 'ORDERING' || !gameState.currentOrder) return;
+    if (typeof selectPastry === 'function') {
+        selectPastry(pastryId);
+    }
+    setTimeout(() => {
+        if (typeof finishAndServeDrink === 'function') {
+            finishAndServeDrink();
+        }
+    }, 250);
+}
+window.quickPrepareAndServePastry = quickPrepareAndServePastry;
 
 function showToast(msg) {
     const toast = document.getElementById('toast-banner');
@@ -283,11 +325,11 @@ function updateFloatingBubblePosition(targetCamera, targetCustomerGroup) {
 function openInvoiceModal() {
     const order = gameState.currentOrder;
     if (!order) return;
-    const tea = TEA_MENU[order.teaId];
+    const tea = (order.teaId && TEA_MENU[order.teaId]) ? TEA_MENU[order.teaId] : null;
 
     document.getElementById('bill-customer').textContent = `${order.customer.avatar} ${order.customer.name}`;
-    document.getElementById('bill-tea-name').textContent = tea.name;
-    document.getElementById('bill-tea-price').textContent = formatVND(tea.price);
+    document.getElementById('bill-tea-name').textContent = tea ? tea.name : (order.pastryId && PASTRY_MENU[order.pastryId] ? `🥐 ${PASTRY_MENU[order.pastryId].name}` : 'Món gọi');
+    document.getElementById('bill-tea-price').textContent = tea ? formatVND(tea.price) : '0đ';
 
     const billTopsContainer = document.getElementById('bill-toppings');
     billTopsContainer.innerHTML = '';
