@@ -13,13 +13,25 @@ function selectBaseTea(teaId) {
     const tea = TEA_MENU[teaId];
     if (!tea) return;
 
+    // Kiểm tra tồn kho nguyên liệu trước khi rót
+    if (typeof checkCanPourTea === 'function' && !checkCanPourTea(teaId)) {
+        return;
+    }
+
     gameState.cup.teaId = teaId;
     setCup3DTea(tea);
+
+    // Tiêu hao nguyên liệu
+    if (typeof consumeTeaIngredients === 'function') {
+        consumeTeaIngredients(teaId);
+    }
 
     playSoundEffect('pour');
     updateCraftingUI();
     checkAutoSealerTrigger();
 }
+
+const selectTea = selectBaseTea;
 
 function toggleTopping(topId) {
     if (gameState.phase !== 'ORDERING') {
@@ -32,7 +44,15 @@ function toggleTopping(topId) {
         gameState.cup.toppings.delete(topId);
         playSoundEffect('click');
     } else {
+        // Kiểm tra tồn kho topping trước khi thêm
+        if (typeof checkCanAddTopping === 'function' && !checkCanAddTopping(topId)) {
+            return;
+        }
+
         gameState.cup.toppings.add(topId);
+        if (typeof consumeToppingIngredient === 'function') {
+            consumeToppingIngredient(topId);
+        }
         playSoundEffect('topping');
     }
 
@@ -64,6 +84,14 @@ function finishAndServeDrink() {
         playSoundEffect('error');
         showToast('⚠️ Bạn chưa chọn cốt trà sữa cho ly nước!');
         return;
+    }
+
+    // Kiểm tra ly và màng ép trong kho
+    if (typeof checkCanSealCup === 'function' && !checkCanSealCup()) {
+        return;
+    }
+    if (typeof consumeCupPackaging === 'function') {
+        consumeCupPackaging();
     }
 
     // Hoạt ảnh dập nắp ly
@@ -143,6 +171,18 @@ function collectPayment() {
 function startNewDay() {
     playSoundEffect('bell');
     gameState.day += 1;
+
+    // Trừ lương nhân viên ngày hôm nay nếu có
+    if (typeof processDailyStaffWages === 'function') {
+        processDailyStaffWages();
+    }
+
+    // Reset thống kê ngày
+    if (gameState.dayStats) {
+        gameState.dayStats.cupsSold = 0;
+        gameState.dayStats.revenueToday = 0;
+    }
+
     updateTopStatsUI();
     showToast(`☀️ Bắt đầu Ngày làm việc thứ ${gameState.day}! Chúc tiệm buôn may bán đắt!`);
 
@@ -162,12 +202,41 @@ function confirmResetGame() {
     if (typeof resetAllUpgrades3D === 'function') {
         resetAllUpgrades3D(scene);
     }
+    if (typeof removeStaff3D === 'function') {
+        removeStaff3D('waiter', scene);
+        removeStaff3D('barista_assistant', scene);
+    }
 
     gameState.upgrades = {
         neon_sign: false,
         music_box: false,
         cozy_carpet: false,
         auto_sealer: false
+    };
+
+    gameState.staff = {
+        waiter: false,
+        barista_assistant: false
+    };
+
+    gameState.inventory = {
+        tea_leaf: 15,
+        matcha_powder: 12,
+        choco_powder: 12,
+        peach_syrup: 12,
+        fresh_milk: 25,
+        boba: 20,
+        jelly: 20,
+        pudding: 15,
+        cheese: 12,
+        cup_pack: 35
+    };
+
+    gameState.menuConfig = {
+        classic: { enabled: true, price: 25000 },
+        matcha: { enabled: true, price: 30000 },
+        choco: { enabled: true, price: 30000 },
+        peach: { enabled: true, price: 25000 }
     };
 
     gameState.money = 100000;

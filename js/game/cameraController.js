@@ -51,7 +51,23 @@ function setupPointerInteraction(targetRenderer, targetCamera, counterHitboxMesh
             }
         }
 
-        // 2. Tương tác nhấn vào Quầy Pha Chế
+        // 2. Tương tác click dọn dẹp Bàn Bẩn (Click to clean table)
+        if (typeof dirtyTableHitboxes !== 'undefined' && dirtyTableHitboxes.length > 0) {
+            const tableIntersects = raycaster.intersectObjects(dirtyTableHitboxes, true);
+            if (tableIntersects.length > 0) {
+                const hitObj = tableIntersects[0].object;
+                const seatId = hitObj.userData ? hitObj.userData.seatId : null;
+                if (typeof SHOP_SEATS !== 'undefined' && seatId !== null) {
+                    const seat = SHOP_SEATS.find(s => s.id === seatId);
+                    if (seat && typeof cleanTableSeat === 'function' && typeof scene !== 'undefined') {
+                        cleanTableSeat(seat, scene, false);
+                        return;
+                    }
+                }
+            }
+        }
+
+        // 3. Tương tác nhấn vào Quầy Pha Chế
         if (counterHitboxMesh) {
             const intersects = raycaster.intersectObject(counterHitboxMesh, true);
             if (intersects.length > 0) {

@@ -20,6 +20,9 @@ function startPatienceTimer(duration = 16) {
     patienceState.speedBonus = 15000;
     patienceState.startTime = Date.now();
 
+    const bubble = document.getElementById('customer-bubble');
+    if (bubble) bubble.classList.remove('hidden');
+
     const container = document.getElementById('patience-container');
     if (container) container.classList.remove('hidden');
 
@@ -28,8 +31,8 @@ function startPatienceTimer(duration = 16) {
 
 function stopPatienceTimer() {
     patienceState.active = false;
-    const container = document.getElementById('patience-container');
-    if (container) container.classList.add('hidden');
+    const bubble = document.getElementById('customer-bubble');
+    if (bubble) bubble.classList.add('hidden');
 
     return {
         stars: patienceState.stars,

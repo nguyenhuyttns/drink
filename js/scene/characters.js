@@ -786,16 +786,17 @@ function animateCustomer(dt, elapsed, onArrivedAtCounter, onLeftShop) {
 
 // 4 vị trí ghế đẩu quanh 2 bàn tròn
 const SHOP_SEATS = [
-    { id: 0, pos: new THREE.Vector3(2.45, 0, 1.5), sitPos: new THREE.Vector3(2.45, 0.22, 1.5), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(3.15, 1.10, 1.5), occupied: false, seatedData: null },
-    { id: 1, pos: new THREE.Vector3(4.75, 0, 1.5), sitPos: new THREE.Vector3(4.75, 0.22, 1.5), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, 1.5), occupied: false, seatedData: null },
-    { id: 2, pos: new THREE.Vector3(2.45, 0, -1.8), sitPos: new THREE.Vector3(2.45, 0.22, -1.8), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(3.15, 1.10, -1.8), occupied: false, seatedData: null },
-    { id: 3, pos: new THREE.Vector3(4.75, 0, -1.8), sitPos: new THREE.Vector3(4.75, 0.22, -1.8), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, -1.8), occupied: false, seatedData: null }
+    { id: 0, pos: new THREE.Vector3(2.45, 0, 1.5), sitPos: new THREE.Vector3(2.45, 0.22, 1.5), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(3.15, 1.10, 1.5), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
+    { id: 1, pos: new THREE.Vector3(4.75, 0, 1.5), sitPos: new THREE.Vector3(4.75, 0.22, 1.5), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, 1.5), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
+    { id: 2, pos: new THREE.Vector3(2.45, 0, -1.8), sitPos: new THREE.Vector3(2.45, 0.22, -1.8), lookAngle: Math.PI / 2, cupPos: new THREE.Vector3(3.15, 1.10, -1.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null },
+    { id: 3, pos: new THREE.Vector3(4.75, 0, -1.8), sitPos: new THREE.Vector3(4.75, 0.22, -1.8), lookAngle: -Math.PI / 2, cupPos: new THREE.Vector3(4.05, 1.10, -1.8), occupied: false, isDirty: false, dirtyTrashGroup: null, seatedData: null }
 ];
 
 let seatedCustomers = [];
+let dirtyTableHitboxes = [];
 
 function getAvailableSeat() {
-    return SHOP_SEATS.find(s => !s.occupied) || null;
+    return SHOP_SEATS.find(s => !s.occupied && !s.isDirty) || null;
 }
 
 function createTableCup(teaColor) {
@@ -950,13 +951,8 @@ function animateSeatedCustomers(dt, elapsed, targetScene) {
                 showToast(praises[Math.floor(Math.random() * praises.length)]);
             }
 
-            // Hết giờ uống: đứng dậy để lại tiền tip và ra về
+            // Hết giờ uống: đứng dậy để lại tiền tip, để lại bàn bẩn và ra về
             if (sc.sitTimer <= 0) {
-                if (sc.tableCup) {
-                    targetScene.remove(sc.tableCup);
-                    sc.tableCup = null;
-                }
-
                 // Tiền tip: cơ bản 10.000đ, thêm +5.000đ nếu đã nâng cấp Máy Hát Đĩa
                 const bonusTip = (typeof gameState !== 'undefined' && gameState.upgrades && gameState.upgrades.music_box) ? 5000 : 0;
                 const tip = 10000 + bonusTip;
@@ -965,7 +961,11 @@ function animateSeatedCustomers(dt, elapsed, targetScene) {
                 updateTopStatsUI();
                 playSoundEffect('cash');
                 const bonusNote = bonusTip > 0 ? ' (kèm +5.000đ thưởng Máy Hát Đĩa)' : '';
-                showToast(`💵 ${sc.order.customer.name} uống xong để lại +${formatVND(tip)} tiền tip cho quán!${bonusNote}`);
+                showToast(`💵 ${sc.order.customer.name} uống xong để lại +${formatVND(tip)} tiền tip! Bàn cần lau dọn.${bonusNote}`);
+
+                // Chuyển bàn sang trạng thái BÀN BẨN (để lại ly rỗng & rác)
+                makeSeatDirty(sc.seat, sc.tableCup, targetScene);
+                sc.tableCup = null;
 
                 // Đứng dậy
                 sc.group.position.y = 0;
@@ -1000,8 +1000,7 @@ function animateSeatedCustomers(dt, elapsed, targetScene) {
                 if (sc.limbs.rightArm) sc.limbs.rightArm.rotation.x = swing * 0.45;
                 sc.group.position.y = Math.abs(Math.sin(sc.walkCycle)) * 0.08;
             } else {
-                // Thoát khỏi quán
-                sc.seat.occupied = false;
+                // Thoát khỏi quán (Bàn vẫn giữ trạng thái bẩn cho tới khi được dọn)
                 sc.seat.seatedData = null;
                 targetScene.remove(sc.group);
                 sc.finished = true;
@@ -1012,6 +1011,111 @@ function animateSeatedCustomers(dt, elapsed, targetScene) {
     seatedCustomers = seatedCustomers.filter(sc => !sc.finished);
 }
 
+/**
+ * Biến bàn thành BÀN BẨN sau khi khách dùng xong
+ */
+function makeSeatDirty(seat, tableCup, targetScene) {
+    if (!seat || !targetScene) return;
+
+    seat.isDirty = true;
+    seat.occupied = true; // Chặn không cho khách mới ngồi vào bàn bẩn
+
+    if (tableCup) {
+        targetScene.remove(tableCup);
+    }
+
+    const trashGroup = new THREE.Group();
+    trashGroup.position.copy(seat.cupPos);
+
+    // 1. Ly nhựa rỗng đã uống hết (Màu nhựa trong suốt)
+    const cupGeo = new THREE.CylinderGeometry(0.12, 0.08, 0.30, 14);
+    const cupMat = new THREE.MeshLambertMaterial({ color: 0xe5e7eb, transparent: true, opacity: 0.65 });
+    const cupMesh = new THREE.Mesh(cupGeo, cupMat);
+    cupMesh.position.y = 0.15;
+    cupMesh.castShadow = true;
+    trashGroup.add(cupMesh);
+
+    // Ống hút nghiêng ngả
+    const straw = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.015, 0.015, 0.22, 8),
+        new THREE.MeshLambertMaterial({ color: 0x9ca3af })
+    );
+    straw.position.set(0.04, 0.24, 0.02);
+    straw.rotation.z = 0.45;
+    trashGroup.add(straw);
+
+    // 2. Cục khăn giấy bẩn vo tròn trên bàn
+    const tissue = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(0.065, 0),
+        new THREE.MeshLambertMaterial({ color: 0xf3f4f6 })
+    );
+    tissue.position.set(-0.16, 0.05, 0.1);
+    trashGroup.add(tissue);
+
+    // 3. Biểu tượng 3D Dọn bàn nổi xoay tròn trên ly
+    const badgeCanvas = document.createElement('canvas');
+    badgeCanvas.width = 256;
+    badgeCanvas.height = 128;
+    const bCtx = badgeCanvas.getContext('2d');
+    bCtx.fillStyle = '#f43f5e';
+    bCtx.beginPath();
+    bCtx.roundRect(10, 10, 236, 108, 28);
+    bCtx.fill();
+    bCtx.font = 'bold 38px sans-serif';
+    bCtx.textAlign = 'center';
+    bCtx.textBaseline = 'middle';
+    bCtx.fillStyle = '#ffffff';
+    bCtx.fillText('🧹 Dọn bàn', 128, 64);
+
+    const badgeTex = new THREE.CanvasTexture(badgeCanvas);
+    const badgeMat = new THREE.SpriteMaterial({ map: badgeTex });
+    const badgeSprite = new THREE.Sprite(badgeMat);
+    badgeSprite.scale.set(0.7, 0.35, 1);
+    badgeSprite.position.set(0, 0.55, 0);
+    trashGroup.add(badgeSprite);
+
+    // 4. Click Hitbox vô hình để người chơi click chuột dọn dẹp
+    const hitboxGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.65, 12);
+    const hitboxMat = new THREE.MeshBasicMaterial({ visible: false, transparent: true, opacity: 0 });
+    const hitboxMesh = new THREE.Mesh(hitboxGeo, hitboxMat);
+    hitboxMesh.position.set(0, 0.3, 0);
+    hitboxMesh.userData = { seatId: seat.id };
+    trashGroup.add(hitboxMesh);
+
+    targetScene.add(trashGroup);
+    seat.dirtyTrashGroup = trashGroup;
+    dirtyTableHitboxes.push(hitboxMesh);
+}
+
+/**
+ * Lau dọn bàn sạch sẽ (Người chơi click hoặc Waiter tự dọn)
+ */
+function cleanTableSeat(seat, targetScene, isByWaiter = false) {
+    if (!seat || !seat.isDirty) return;
+
+    if (seat.dirtyTrashGroup && targetScene) {
+        dirtyTableHitboxes = dirtyTableHitboxes.filter(hb => hb.userData.seatId !== seat.id);
+        targetScene.remove(seat.dirtyTrashGroup);
+        seat.dirtyTrashGroup = null;
+    }
+
+    seat.isDirty = false;
+    seat.occupied = false;
+    seat.seatedData = null;
+
+    playSoundEffect('cash');
+
+    if (isByWaiter) {
+        showToast(`🐰 Bé Thỏ Phục Vụ đã dọn dẹp sạch sẽ Bàn #${seat.id + 1}! Sẵn sàng đón khách mới.`);
+    } else {
+        const cleanReward = 1000;
+        gameState.money += cleanReward;
+        gameState.revenue += cleanReward;
+        updateTopStatsUI();
+        showToast(`✨ Bạn vừa lau dọn sạch sẽ Bàn #${seat.id + 1}! Nhận +${formatVND(cleanReward)} tiền boa!`);
+    }
+}
+
 function clearAllSeatedCustomers(targetScene) {
     if (!seatedCustomers) return;
     seatedCustomers.forEach(sc => {
@@ -1020,7 +1124,14 @@ function clearAllSeatedCustomers(targetScene) {
     });
     seatedCustomers = [];
     SHOP_SEATS.forEach(s => {
+        if (s.dirtyTrashGroup && targetScene) {
+            targetScene.remove(s.dirtyTrashGroup);
+            s.dirtyTrashGroup = null;
+        }
+        s.isDirty = false;
         s.occupied = false;
         s.seatedData = null;
     });
+    dirtyTableHitboxes = [];
 }
+

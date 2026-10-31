@@ -32,12 +32,23 @@ function initGame() {
         applyPurchasedDecorUpgrades(scene);
     }
 
+    // Dựng nhân viên nếu đã được thuê
+    if (gameState.staff && gameState.staff.waiter && typeof buildWaiter3D === 'function') {
+        buildWaiter3D(scene);
+    }
+    if (gameState.staff && gameState.staff.barista_assistant && typeof buildAssistantBarista3D === 'function') {
+        buildAssistantBarista3D(scene);
+    }
+
     // 3. Đăng ký tương tác click chuột vào quầy và bé mèo trong không gian 3D
     setupPointerInteraction(renderer, camera, counterHitboxMeshRef, petCatHitboxRef);
 
     // 4. Cập nhật giao diện ban đầu
     updateTopStatsUI();
     updateCraftingUI();
+    if (typeof updateInventoryBadgesUI === 'function') {
+        updateInventoryBadgesUI();
+    }
 
     // 5. Callback khi khách rời quán sau khi thanh toán
     function onCustomerLeftShop() {
@@ -65,6 +76,11 @@ function initGame() {
         animateCustomer(dt, elapsed, onCustomerArrivedAtCounter, onCustomerLeftShop);
         if (typeof animateSeatedCustomers === 'function') {
             animateSeatedCustomers(dt, elapsed, scene);
+        }
+
+        // Hoạt ảnh hành vi nhân viên 3D (Waiter dọn bàn, Assistant Barista)
+        if (typeof updateStaffAI === 'function') {
+            updateStaffAI(dt, elapsed, scene);
         }
 
         // Hoạt ảnh bé mèo cưng Mimi

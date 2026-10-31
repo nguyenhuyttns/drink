@@ -175,15 +175,15 @@ function showToast(msg) {
 
 function showSpeechBubble(title, message, isError = false) {
     const bubble = document.getElementById('customer-bubble');
-    const statusEl = document.getElementById('bubble-status');
-    const textEl = document.getElementById('bubble-text');
-    if (!bubble || !statusEl || !textEl) return;
+    if (!bubble) return;
 
-    statusEl.textContent = title;
-    statusEl.className = isError
-        ? 'text-xs font-extrabold text-rose-600 uppercase tracking-wider mb-0.5'
-        : 'text-xs font-extrabold text-pink-500 uppercase tracking-wider mb-0.5';
-    textEl.textContent = message;
+    const errBox = document.getElementById('bubble-error');
+    if (isError && errBox) {
+        errBox.textContent = message;
+        errBox.classList.remove('hidden');
+    } else if (errBox) {
+        errBox.classList.add('hidden');
+    }
     bubble.classList.remove('hidden');
 }
 
@@ -191,6 +191,10 @@ function hideSpeechBubble() {
     const bubble = document.getElementById('customer-bubble');
     if (bubble) {
         bubble.classList.add('hidden');
+    }
+    const errBox = document.getElementById('bubble-error');
+    if (errBox) {
+        errBox.classList.add('hidden');
     }
 }
 
@@ -345,4 +349,297 @@ function closeShopModal() {
     const modal = document.getElementById('shop-modal');
     if (modal) modal.classList.add('hidden');
 }
+
+/* ============================================================================
+ * 1. QUẢN LÝ KHO & CHỢ NGUYÊN LIỆU (INVENTORY MODAL UI)
+ * ============================================================================ */
+
+function renderInventoryModal() {
+    const list = document.getElementById('inventory-items-list');
+    const elCurrent = document.getElementById('inventory-current-money');
+    if (elCurrent) elCurrent.textContent = formatVND(gameState.money);
+    if (!list || typeof INVENTORY_ITEMS === 'undefined') return;
+
+    list.innerHTML = '';
+    Object.keys(INVENTORY_ITEMS).forEach(itemId => {
+        const item = INVENTORY_ITEMS[itemId];
+        const stock = gameState.inventory[itemId] || 0;
+        const canAffordSingle = gameState.money >= item.costSingle;
+        const canAffordPack = gameState.money >= item.packCost;
+
+        let badgeColor = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+        let statusText = `Còn ${stock} ${item.unit}`;
+        if (stock === 0) {
+            badgeColor = 'bg-rose-100 text-rose-700 border-rose-300 animate-pulse';
+            statusText = 'HẾT HÀNG ⚠️';
+        } else if (stock <= 3) {
+            badgeColor = 'bg-amber-100 text-amber-800 border-amber-300';
+            statusText = `Sắp hết (${stock})`;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'p-3.5 rounded-2xl border-2 border-pink-100 bg-white hover:border-pink-300 flex flex-col justify-between transition';
+        card.innerHTML = `
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-3xl">${item.icon}</span>
+                    <span class="text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border ${badgeColor}">
+                        ${statusText}
+                    </span>
+                </div>
+                <h4 class="font-bold text-gray-800 text-sm mb-0.5">${item.name}</h4>
+                <p class="text-xs text-gray-500 mb-3">${item.desc}</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-pink-50">
+                <button onclick="buyInventoryItem('${itemId}', false)" class="${
+                    canAffordSingle 
+                        ? 'bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200' 
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                } font-bold py-1.5 px-2 rounded-xl text-[11px] transition text-center">
+                    +1 ${item.unit}<br>
+                    <span class="text-[10px] font-semibold text-gray-500">${formatVND(item.costSingle)}</span>
+                </button>
+                <button onclick="buyInventoryItem('${itemId}', true)" class="${
+                    canAffordPack 
+                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm' 
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                } font-bold py-1.5 px-2 rounded-xl text-[11px] transition text-center">
+                    Thùng sỉ (+${item.packQty})<br>
+                    <span class="text-[10px] font-medium opacity-90">${formatVND(item.packCost)}</span>
+                </button>
+            </div>
+        `;
+        list.appendChild(card);
+    });
+}
+
+function openInventoryModal() {
+    playSoundEffect('click');
+    const modal = document.getElementById('inventory-modal');
+    if (modal) {
+        renderInventoryModal();
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeInventoryModal() {
+    playSoundEffect('click');
+    const modal = document.getElementById('inventory-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function updateInventoryBadgesUI() {
+    // Cập nhật số lượng trên các nút cốt trà
+    Object.keys(TEA_MENU).forEach(tKey => {
+        const btn = document.getElementById(`btn-tea-${tKey}`);
+        if (!btn) return;
+        const oldStock = btn.querySelector('.stock-indicator');
+        if (oldStock) oldStock.remove();
+
+        // Lấy nguyên liệu chính của loại trà
+        const required = (typeof TEA_RECIPES !== 'undefined' && TEA_RECIPES[tKey]) ? TEA_RECIPES[tKey] : [];
+        const minStock = required.reduce((min, ingId) => Math.min(min, gameState.inventory[ingId] || 0), 999);
+
+        let stockText = minStock > 0 ? `Kho: ${minStock}` : 'Hết ⚠️';
+        let stockCls = minStock > 0 ? 'text-gray-400' : 'text-rose-600 font-bold bg-rose-50 px-1 rounded';
+
+        const label = btn.querySelector('.font-bold');
+        if (label) {
+            label.insertAdjacentHTML('beforeend', `<span class="stock-indicator text-[10px] ml-1.5 ${stockCls}">(${stockText})</span>`);
+        }
+    });
+
+    // Cập nhật số lượng trên các nút topping
+    Object.keys(TOPPING_MENU).forEach(topKey => {
+        const btn = document.getElementById(`btn-top-${topKey}`);
+        if (!btn) return;
+        const oldStock = btn.querySelector('.stock-indicator');
+        if (oldStock) oldStock.remove();
+
+        const ingId = (typeof TOPPING_RECIPES !== 'undefined') ? TOPPING_RECIPES[topKey] : topKey;
+        const stock = gameState.inventory[ingId] || 0;
+
+        let stockText = stock > 0 ? `Kho: ${stock}` : 'Hết ⚠️';
+        let stockCls = stock > 0 ? 'text-gray-400' : 'text-rose-600 font-bold bg-rose-50 px-1 rounded';
+
+        const label = btn.querySelector('.font-bold');
+        if (label) {
+            label.insertAdjacentHTML('beforeend', `<span class="stock-indicator text-[10px] ml-1.5 ${stockCls}">(${stockText})</span>`);
+        }
+    });
+}
+
+/* ============================================================================
+ * 2. QUẢN LÝ MENU & GIÁ BÁN TÙY CHỈNH (MENU SETTINGS MODAL UI)
+ * ============================================================================ */
+
+function renderMenuSettingsModal() {
+    const list = document.getElementById('menu-items-setting-list');
+    if (!list || typeof TEA_MENU === 'undefined') return;
+
+    list.innerHTML = '';
+    Object.keys(TEA_MENU).forEach(teaId => {
+        const tea = TEA_MENU[teaId];
+        const isEnabled = gameState.menuConfig && gameState.menuConfig[teaId] ? gameState.menuConfig[teaId].enabled : true;
+        const currentPrice = (typeof getDrinkCurrentPrice === 'function') ? getDrinkCurrentPrice(teaId) : tea.price;
+        const cost = (typeof calculateDrinkCost === 'function') ? calculateDrinkCost(teaId) : 5000;
+        const profit = currentPrice - cost;
+        const marginPct = Math.round((profit / currentPrice) * 100);
+
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-2xl border-2 flex flex-col justify-between transition ${
+            isEnabled 
+                ? 'border-pink-200 bg-white shadow-sm' 
+                : 'border-gray-200 bg-gray-50 opacity-75'
+        }`;
+
+        card.innerHTML = `
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-4 h-4 rounded-full inline-block shadow-sm" style="background-color: ${tea.hex};"></span>
+                        <h4 class="font-bold text-gray-800 text-sm">${tea.name}</h4>
+                    </div>
+                    <button onclick="toggleMenuItemState('${teaId}')" class="px-2.5 py-1 rounded-xl text-xs font-extrabold transition ${
+                        isEnabled 
+                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
+                            : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                    }">
+                        ${isEnabled ? '✓ Đang Bán' : '✕ Tạm Ngưng'}
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 py-2.5 my-2 border-y border-pink-50 text-center">
+                    <div>
+                        <div class="text-[10px] text-gray-400 font-bold uppercase">Giá vốn</div>
+                        <div class="text-xs font-extrabold text-gray-600">${formatVND(cost)}</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-400 font-bold uppercase">Giá bán</div>
+                        <div class="text-sm font-black text-pink-600">${formatVND(currentPrice)}</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-400 font-bold uppercase">Lãi ròng</div>
+                        <div class="text-xs font-extrabold text-emerald-600">+${formatVND(profit)} (${marginPct}%)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+                <span class="text-xs text-gray-500 font-semibold">Tùy chỉnh giá bán:</span>
+                <div class="flex items-center gap-1.5">
+                    <button onclick="adjustMenuItemPrice('${teaId}', -1000)" class="w-8 h-8 rounded-lg bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold text-base flex items-center justify-center transition active:scale-95">
+                        -
+                    </button>
+                    <span class="text-xs font-bold text-gray-700 px-1 min-w-[55px] text-center">${formatVND(currentPrice)}</span>
+                    <button onclick="adjustMenuItemPrice('${teaId}', 1000)" class="w-8 h-8 rounded-lg bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold text-base flex items-center justify-center transition active:scale-95">
+                        +
+                    </button>
+                </div>
+            </div>
+        `;
+        list.appendChild(card);
+    });
+}
+
+function openMenuSettingsModal() {
+    playSoundEffect('click');
+    const modal = document.getElementById('menu-settings-modal');
+    if (modal) {
+        renderMenuSettingsModal();
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeMenuSettingsModal() {
+    playSoundEffect('click');
+    const modal = document.getElementById('menu-settings-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+/* ============================================================================
+ * 3. QUẢN LÝ NHÂN SỰ & TUYỂN DỤNG (STAFF MODAL UI)
+ * ============================================================================ */
+
+function renderStaffModal() {
+    const list = document.getElementById('staff-roles-list');
+    const elCurrent = document.getElementById('staff-current-money');
+    if (elCurrent) elCurrent.textContent = formatVND(gameState.money);
+    if (!list || typeof STAFF_ROLES === 'undefined') return;
+
+    list.innerHTML = '';
+    Object.keys(STAFF_ROLES).forEach(roleId => {
+        const staff = STAFF_ROLES[roleId];
+        const isHired = gameState.staff[roleId];
+        const canAfford = gameState.money >= staff.hireCost;
+
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-2xl border-2 flex flex-col justify-between transition ${
+            isHired 
+                ? 'border-emerald-300 bg-emerald-50/60 shadow-sm' 
+                : 'border-pink-100 bg-white hover:border-pink-300'
+        }`;
+
+        let btnAction = '';
+        if (isHired) {
+            btnAction = `
+                <div class="flex items-center gap-2">
+                    <span class="flex-1 bg-emerald-100 text-emerald-800 text-xs font-bold py-2 rounded-xl text-center">
+                        ✓ Đang làm việc (Lương: ${formatVND(staff.dailySalary)}/ngày)
+                    </span>
+                    <button onclick="fireStaff('${roleId}', scene)" class="bg-rose-100 hover:bg-rose-200 text-rose-600 px-3 py-2 rounded-xl text-xs font-bold transition">
+                        Nghỉ việc
+                    </button>
+                </div>
+            `;
+        } else {
+            btnAction = `
+                <button onclick="hireStaff('${roleId}', scene)" class="w-full ${
+                    canAfford 
+                        ? 'bg-pink-500 hover:bg-pink-600 text-white shadow-sm' 
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                } font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1.5">
+                    🤝 Tuyển Dụng (${formatVND(staff.hireCost)}) • Lương: ${formatVND(staff.dailySalary)}/ngày
+                </button>
+            `;
+        }
+
+        card.innerHTML = `
+            <div>
+                <div class="flex items-center gap-3 mb-2.5">
+                    <div class="w-12 h-12 rounded-2xl bg-pink-100 flex items-center justify-center text-3xl shadow-sm">
+                        ${staff.icon}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm leading-tight">${staff.name}</h4>
+                        <span class="text-xs font-semibold text-pink-500">${staff.title}</span>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-600 mb-2 leading-relaxed">${staff.desc}</p>
+                <div class="bg-pink-50/70 border border-pink-100 p-2 rounded-xl text-[11px] font-bold text-pink-700 mb-3">
+                    💡 Hiệu quả: ${staff.benefit}
+                </div>
+            </div>
+            ${btnAction}
+        `;
+        list.appendChild(card);
+    });
+}
+
+function openStaffModal() {
+    playSoundEffect('click');
+    const modal = document.getElementById('staff-modal');
+    if (modal) {
+        renderStaffModal();
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeStaffModal() {
+    playSoundEffect('click');
+    const modal = document.getElementById('staff-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
 

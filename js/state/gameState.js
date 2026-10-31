@@ -32,6 +32,42 @@ const gameState = {
         music_box: false,   // Máy phát nhạc cổ điển (Tăng thêm 20% tiền tip)
         cozy_carpet: false, // Thảm hoa nhung trước quầy
         auto_sealer: false  // Máy dập nắp mạ vàng tự động
+    },
+
+    // 1. Kho nguyên liệu (Số lượng từng nguyên liệu có sẵn)
+    inventory: {
+        tea_leaf: 15,
+        matcha_powder: 12,
+        choco_powder: 12,
+        peach_syrup: 12,
+        fresh_milk: 25,
+        boba: 20,
+        jelly: 20,
+        pudding: 15,
+        cheese: 12,
+        cup_pack: 35
+    },
+
+    // 2. Cấu hình Menu & Giá bán tùy chỉnh
+    menuConfig: {
+        classic: { enabled: true, price: 25000 },
+        matcha: { enabled: true, price: 30000 },
+        choco: { enabled: true, price: 30000 },
+        peach: { enabled: true, price: 25000 }
+    },
+
+    // 3. Nhân sự của quán
+    staff: {
+        waiter: false,            // Bé Thỏ chạy bàn (tự dọn bàn)
+        barista_assistant: false  // Bé Gấu phụ quầy (tự rót trà)
+    },
+
+    // 4. Nhật ký tài chính trong ngày
+    dayStats: {
+        ingredientSpent: 0,
+        wagesPaid: 0,
+        cupsSold: 0,
+        revenueToday: 0
     }
 };
 
